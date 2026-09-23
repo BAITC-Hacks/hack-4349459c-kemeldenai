@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { api } from './api'
+import { TeamRank, RankBadge } from './TeamRank'
 import { useBookmarks } from './bookmarks'
 import { MyApplications } from './MyApplications'
 import { TaskSummary } from './TaskSummary'
@@ -644,7 +645,7 @@ function App() {
           <span className="brand__mark">S<span>.</span></span>
           <span className="brand__name">AI Sana <small>Практические задачи</small></span>
         </div>
-        <div className="persona-header"><span><small>{workspace === 'business' ? 'БИЗНЕС' : 'КОМАНДА'}</small><strong>{workspace === 'business' ? 'Демо-компания' : activeTeam?.name}</strong>{workspace === 'student' && <em>{activeTeam?.progressPoints ?? 0} баллов</em>}</span><button className="button button--outline" type="button" disabled={builderBusy || proposalBusy} onClick={changeParticipant}>Сменить участника</button></div>
+        <div className="persona-header"><span><small>{workspace === 'business' ? 'БИЗНЕС' : 'КОМАНДА'}</small><strong>{workspace === 'business' ? 'Демо-компания' : activeTeam?.name}</strong>{workspace === 'student' && <><RankBadge points={activeTeam?.progressPoints ?? 0} /><em>{activeTeam?.progressPoints ?? 0} баллов</em></>}</span><button className="button button--outline" type="button" disabled={builderBusy || proposalBusy} onClick={changeParticipant}>Сменить участника</button></div>
         <span className="topbar__caption">Открытый выбор команд</span>
       </header>
 
@@ -675,14 +676,14 @@ function App() {
           </div>
         </CompletionDialog>
         {notice && <div className="notice" role="status"><span>{notice}</span><button type="button" aria-label="Закрыть уведомление" onClick={() => setNotice('')}>×</button></div>}
-        {workspace === 'student' && activeTeam && <div className="team-banner"><div><span>Вы вошли как команда</span><strong>{activeTeam.name}</strong><small>{activeTeam.skills.join(' · ')}</small></div><div className="team-banner__points"><strong>{activeTeam.progressPoints}</strong><span>баллов прогресса</span></div></div>}
+        {workspace === 'student' && activeTeam && <section className="team-progress-panel"><div className="team-banner"><div><span>Вы вошли как команда</span><strong>{activeTeam.name}</strong><small>{activeTeam.skills.join(' · ')}</small></div><div className="team-banner__points"><strong>{activeTeam.progressPoints}</strong><span>баллов прогресса</span></div></div><TeamRank team={activeTeam} /></section>}
 
         {workspace === 'student' && <nav className="subnav" aria-label="Раздел команды"><button type="button" aria-current={studentPage === 'catalog' ? 'page' : undefined} className={studentPage === 'catalog' ? 'is-active' : ''} onClick={() => setStudentPage('catalog')}>Каталог задач</button><button type="button" aria-current={studentPage === 'applications' ? 'page' : undefined} className={studentPage === 'applications' ? 'is-active' : ''} onClick={() => { setStudentPage('applications'); void refreshTeams() }}>Мои отклики</button></nav>}
         {workspace === 'business' ? (
           <>
             <nav className="subnav" aria-label="Раздел бизнеса">
               <button type="button" aria-current={businessPage === 'builder' ? 'page' : undefined} className={businessPage === 'builder' ? 'is-active' : ''} onClick={() => setBusinessPage('builder')}>Конструктор задачи</button>
-              <button type="button" aria-current={businessPage === 'responses' ? 'page' : undefined} className={businessPage === 'responses' ? 'is-active' : ''} onClick={() => { setBusinessPage('responses'); void refreshCatalog() }}>Отклики команд</button>
+              <button type="button" aria-current={businessPage === 'responses' ? 'page' : undefined} className={businessPage === 'responses' ? 'is-active' : ''} onClick={() => { setBusinessPage('responses'); void refreshCatalog(); void refreshTeams() }}>Отклики команд</button>
             </nav>
             {businessPage === 'builder' ? (
               <div className="builder-layout">
@@ -762,7 +763,7 @@ function App() {
               </div>
             ) : (
               <section className="responses-layout" aria-labelledby="responses-title">
-                <div className="responses-intro"><div><p className="eyebrow">РЕШЕНИЕ ЗА БИЗНЕСОМ</p><h2 id="responses-title" tabIndex={-1}>Отклики команд</h2><p>Сравните предложения и выберите одну, несколько или ни одной команды.</p></div><button className="button button--outline" disabled={catalogLoading} onClick={() => void refreshCatalog()} type="button"><BusyLabel busy={catalogLoading || proposalsLoading} idle="Обновить список" pending="Обновляем…" /></button></div>
+                <div className="responses-intro"><div><p className="eyebrow">РЕШЕНИЕ ЗА БИЗНЕСОМ</p><h2 id="responses-title" tabIndex={-1}>Отклики команд</h2><p>Сравните предложения и выберите одну, несколько или ни одной команды.</p></div><button className="button button--outline" disabled={catalogLoading} onClick={() => { void refreshCatalog(); void refreshTeams() }} type="button"><BusyLabel busy={catalogLoading || proposalsLoading} idle="Обновить список" pending="Обновляем…" /></button></div>
                 {catalogLoading && !tasks.length && <LoadingCards label="Загружаем опубликованные задачи…" count={1} />}
                 {catalogError && <div className="error-message" role="alert"><span>{catalogError}</span><button className="button button--outline" type="button" disabled={catalogLoading} onClick={() => void refreshCatalog()}>Попробовать снова</button></div>}
                 <label className="field field--narrow"><span className="field__label">Задача</span><select value={businessTaskId} onChange={(event) => setBusinessTaskId(event.target.value)} disabled={!businessTasks.length}><option value="">Выберите задачу</option>{businessTasks.map((item) => <option key={item.id} value={item.id}>{item.title || 'Без названия'} · {item.score}/100</option>)}</select></label>
@@ -770,7 +771,8 @@ function App() {
                 {proposalsLoading && !visibleProposals.length && <LoadingCards label="Загружаем отклики…" count={2} />}
                 {proposalsError && <div className="error-message" role="alert"><span>{proposalsError}</span><button className="button button--outline" type="button" onClick={() => setProposalsRefresh((current) => current + 1)}>Попробовать снова</button></div>}
                 {!proposalsLoading && businessTaskId && !visibleProposals.length && !proposalsError && <p className="state-message">На эту задачу ещё нет предложений.</p>}
-                <div className="proposal-list" aria-busy={proposalsLoading}>{visibleProposals.map((item) => <article className="proposal-card" key={item.id}><div className="proposal-card__head"><div><p className="eyebrow">ПРЕДЛОЖЕНИЕ КОМАНДЫ</p><h3>{teams.find((team) => team.id === item.teamId)?.name ?? 'Команда'}</h3></div><span className={`decision decision--${item.decision}`}>{decisionLabels[item.decision]}</span></div><div className="proposal-card__content"><div><span>Идея решения</span><p>{item.idea}</p></div><div><span>План работы</span><p>{item.plan}</p></div><div><span>Срок</span><p>{item.timeline}</p></div><div><span>Прототип</span><p><PrototypeLink url={item.prototypeUrl} /></p></div></div><div className="proposal-card__actions"><button className="button button--accent" type="button" disabled={decidingId === item.id || item.decision === 'selected'} onClick={() => void decide(item, 'selected')}>Выбрать команду</button><button className="button button--outline" type="button" disabled={decidingId === item.id || item.decision === 'rejected'} onClick={() => void decide(item, 'rejected')}>Отклонить</button></div>{item.decision === 'selected' && <MilestonePanel proposalId={item.id} onConfirmed={milestoneConfirmed} />}</article>)}</div>
+                {teamsError && <p className="error-message" role="alert">Ранги команд могут быть неактуальны. {teamsError} <button type="button" className="button button--text" onClick={() => void refreshTeams()}>Обновить ранги</button></p>}
+                <div className="proposal-list" aria-busy={proposalsLoading}>{visibleProposals.map((item) => <article className="proposal-card" key={item.id}><div className="proposal-card__head"><div><p className="eyebrow">ПРЕДЛОЖЕНИЕ КОМАНДЫ</p><h3>{teams.find((team) => team.id === item.teamId)?.name ?? 'Команда'}</h3></div><span className={`decision decision--${item.decision}`}>{decisionLabels[item.decision]}</span></div><TeamRank team={teams.find((team) => team.id === item.teamId)} compact /><div className="proposal-card__content"><div><span>Идея решения</span><p>{item.idea}</p></div><div><span>План работы</span><p>{item.plan}</p></div><div><span>Срок</span><p>{item.timeline}</p></div><div><span>Прототип</span><p><PrototypeLink url={item.prototypeUrl} /></p></div></div><div className="proposal-card__actions"><button className="button button--accent" type="button" disabled={decidingId === item.id || item.decision === 'selected'} onClick={() => void decide(item, 'selected')}>Выбрать команду</button><button className="button button--outline" type="button" disabled={decidingId === item.id || item.decision === 'rejected'} onClick={() => void decide(item, 'rejected')}>Отклонить</button></div>{item.decision === 'selected' && <MilestonePanel proposalId={item.id} onConfirmed={milestoneConfirmed} />}</article>)}</div>
               </section>
             )}
           </>
