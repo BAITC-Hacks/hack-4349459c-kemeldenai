@@ -93,3 +93,46 @@ def test_openapi_uses_contract_responses_and_camel_case(client):
         if path.startswith("/api/"):
             for operation in methods.values():
                 assert operation["responses"]["422"]["content"]["application/json"]["schema"]["$ref"].endswith("/ErrorResponse")
+
+
+def test_topic_filter_returns_matching_russian_tasks_and_no_sql_wildcards(client):
+    task = client.get("/api/tasks").json()[0]
+    matches = client.get("/api/tasks", params={"topic": task["topic"]}).json()
+    assert matches
+    assert all(row["topic"] == task["topic"] for row in matches)
+    assert client.get("/api/tasks", params={"topic": "%"}).json() == []
+
+
+def test_database_failure_has_safe_error_and_recovers(client, caplog):
+    from sqlalchemy import event
+    from sqlalchemy.exc import OperationalError
+
+    def fail(*args):
+        raise OperationalError("secret-query", {}, Exception("secret-password"))
+
+    engine = client.app.state.engine
+    event.listen(engine, "before_cursor_execute", fail)
+    try:
+        response = client.get("/api/health")
+        assert response.status_code == 503
+        assert set(response.json()) == {"error"}
+        assert "secret" not in response.text + caplog.text
+    finally:
+        event.remove(engine, "before_cursor_execute", fail)
+    assert client.get("/api/health").status_code == 200
+
+
+def test_unknown_resources_and_invalid_decisions(client):
+    missing = "00000000-0000-0000-0000-000000000001"
+    for method, path, body in [
+        ("GET", f"/api/tasks/{missing}", None),
+        ("PUT", f"/api/tasks/{missing}", {}),
+        ("POST", f"/api/tasks/{missing}/confirm", {}),
+        ("POST", f"/api/tasks/{missing}/publish", None),
+        ("GET", f"/api/tasks/{missing}/proposals", None),
+        ("PATCH", f"/api/proposals/{missing}", {"decision": "selected"}),
+    ]:
+        response = client.request(method, path, json=body)
+        assert response.status_code == 404
+        assert set(response.json()) == {"error"}
+    assert client.patch(f"/api/proposals/{missing}", json={"decision": "pending"}).status_code == 422
