@@ -69,10 +69,10 @@ The `questions` response remains compatible; `suggestedFields` and `mixed` exten
 | Prompt injection inside a business description | Treat it as user data; never change the response shape, scoring, or team-selection rules. |
 | Live demo with a configured key | Record provider source and latency without logging the key or full input; show one live AI result and one offline fallback path. |
 
-## Task-focused work packages
+## Completed task-focused work packages
 
-- **Question quality and reliability:** one owner improves missing-information selection, limits the result to three to five nonredundant questions, preserves answers during retries, makes transfer idempotent, excludes unnecessary contact data from the provider request, and tests live and fallback behavior. This package includes whichever API and UI changes are needed for the complete journey.
-- **Grounded card suggestions:** one owner adds evidence-backed field suggestions, validates excerpts against the submitted text, provides accept/edit/discard controls, and verifies that no suggestion changes the score until human confirmation. Coordinate the JSON contract before editing shared files.
-- **End-to-end acceptance:** one owner runs the weak-to-strong score journey and complete five-minute flow against the real API and PostgreSQL, compares the quality fixtures, and verifies no-key fallback. The provider key stays only in local environment.
+- **Question quality and reliability:** missing-information selection, three to five nonredundant questions, answer preservation during refresh, idempotent transfer, bounded and redacted provider context, and live/fallback checks now span the API and UI.
+- **Grounded card suggestions:** exact-evidence field suggestions and accept/edit/discard controls now let the business review text before confirmation. The score remains unchanged until confirmation.
+- **End-to-end acceptance:** backend tests, the PostgreSQL flow, frontend build, and browser checks covered the real API and no-key fallback. The provider key remains only in local configuration. The full timed five-minute presentation remains a human rehearsal item.
 
 Do not add an AI-generated readiness score, automatic team assignment, chat, embeddings, or a vector database for this round.

@@ -4,7 +4,7 @@ Runnable five-hour MVP: a business user improves and publishes a task, student t
 
 The [main task and agent handoff](docs/MAIN_TASK.md) records scope, API shapes, scoring, and the demo acceptance test. The API lives in `api/`; the React UI lives in `web/`.
 
-The [completed demo round](docs/NEXT_TASK.md) records participant entry and confirmed progress points. The [AI improvement plan](docs/AI_REQUIREMENTS.md) defines the next task-focused work packages. Each computer should branch from the latest `origin/main` for its chosen task.
+The [completed demo round](docs/NEXT_TASK.md) records participant entry and confirmed progress points. The [AI task assistant record](docs/AI_REQUIREMENTS.md) documents the next completed task-focused round and its remaining limits. Each computer should branch from the latest `origin/main` for its chosen task.
 
 ## Development database
 
