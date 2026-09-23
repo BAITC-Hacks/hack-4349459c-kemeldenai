@@ -1,5 +1,7 @@
 # HackAlem AI MVP main task
 
+The first Agent A and Agent B implementation round is integrated on `main`. The ownership and checkpoint sections below record that round. For the next split, both computers should pull the latest `origin/main` and create new branches for their new assignments.
+
 ## Outcome and constraints
 
 Build a Russian-language web MVP for a five-hour hackathon. A business representative enters a weak task description, receives at least three relevant clarification questions, edits and explicitly confirms a complete task card, sees a transparent readiness rating, and publishes it. A student team finds the task in the shared catalog and submits a proposal. The business manually selects, rejects, or leaves proposals undecided. The live demo must show the complete path in at most five minutes.

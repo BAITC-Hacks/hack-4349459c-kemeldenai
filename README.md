@@ -1,12 +1,12 @@
 # HackAlem AI task readiness MVP
 
-Shared starting point for a five-hour MVP: a business user improves and publishes a task, student teams submit proposals, and the business manually decides which teams to work with.
+Runnable five-hour MVP: a business user improves and publishes a task, student teams submit proposals, and the business manually decides which teams to work with.
 
-The [main task and agent handoff](docs/MAIN_TASK.md) is the source of truth for scope, API shapes, scoring, ownership, and the demo acceptance test. Agent A and Agent B should branch from this `main` commit on their own computers before implementing code.
+The [main task and agent handoff](docs/MAIN_TASK.md) records scope, API shapes, scoring, and the demo acceptance test. The API lives in `api/`; the React UI lives in `web/`.
 
 ## Development database
 
-Docker Compose starts only PostgreSQL at this stage. The application services belong to the agents' implementation branches. Each computer runs its own local database; the Git repository carries code and seed definitions, not database state.
+Docker Compose starts PostgreSQL. Run the API and Vite on the host using the commands below. Each computer runs its own local database; the Git repository carries code and seed definitions, not database state.
 
 ```sh
 cp .env.example .env
@@ -14,17 +14,17 @@ docker compose up -d db
 docker compose ps
 ```
 
-The API runs on the host during development and connects through `DATABASE_URL` from `.env`. When Agent A adds the API service to Compose, it should use `db` as the hostname inside that container and wait for the database health check.
+The API runs on the host during development and connects through `DATABASE_URL` from `.env`.
 If you change `POSTGRES_PASSWORD`, update the password in `DATABASE_URL` too.
 
 Do not commit `.env`, API keys, or local database files. Stop the database with `docker compose down`; use `docker compose down -v` only when intentionally deleting local development data.
 
-## Branches
+## Parallel branches
 
-- Computer A: `codex/agent-a-api`
-- Computer B: `codex/agent-b-ui`
+- Initial Computer A branch: `codex/agent-a-api`
+- Initial Computer B branch: `codex/agent-b-ui`
 
-Both start from `origin/main`, make their changes on separate branches, and open pull requests. Integrate against the contract in [docs/MAIN_TASK.md](docs/MAIN_TASK.md) before merging.
+The initial API and UI branches are integrated on `main`. For the next round of parallel work, both computers should pull the latest `origin/main`, create new branches, and open pull requests. Integrate against the contract in [docs/MAIN_TASK.md](docs/MAIN_TASK.md) before merging.
 
 ## Backend (Agent A)
 
@@ -105,7 +105,19 @@ See [`api/IMPLEMENTATION.md`](api/IMPLEMENTATION.md) for implementation steps an
 
 The PostgreSQL check creates a uniquely named temporary schema, verifies the full API flow and persistence across application restarts, regenerates the two contract files, and removes only its own schema. It leaves application records untouched. When a provider key is configured, this command makes one live clarification call; unit tests always disable live calls.
 
-### Five-minute demo (once Agent B is integrated)
+## Frontend
+
+With PostgreSQL and the API running, start the UI in a second terminal:
+
+```sh
+cd web
+npm ci
+npm run dev
+```
+
+Open the local URL printed by Vite. The development server proxies `/api` to `http://127.0.0.1:8000`. See [web/README.md](web/README.md) for frontend build and handoff details.
+
+### Five-minute demo
 
 1. **0:00–0:45:** In business mode, enter «Нужен сервис для магазина» and show three clarification questions.
 2. **0:45–2:00:** Save a weak draft, confirm it, then add context, available data and measurable acceptance criteria. Confirm again and show the increase and category breakdown.
