@@ -43,7 +43,7 @@ export function MyApplications({ teamId, onOpenTask, onRefreshTeam }: {
   const visible = applications.filter((item) => !filter || item.proposal.decision === filter)
   function refresh() { setRevision((value) => value + 1); onRefreshTeam() }
   return <section className="applications" aria-labelledby="applications-title" aria-busy={loading}>
-    <div className="catalog__toolbar"><div><h2 id="applications-title">Мои отклики</h2><p>История предложений вашей демо-команды. Нажмите «Обновить», чтобы проверить решения бизнеса.</p></div><button type="button" className="button button--outline" onClick={refresh} disabled={loading}>{loading ? 'Обновляем…' : 'Обновить отклики'}</button></div>
+    <div className="catalog__toolbar"><div><h2 className="visually-hidden" id="applications-title">Мои отклики</h2><p>История предложений вашей демо-команды. Нажмите «Обновить», чтобы проверить решения бизнеса.</p></div><button type="button" className="button button--outline" onClick={refresh} disabled={loading}>{loading ? 'Обновляем…' : 'Обновить отклики'}</button></div>
     {error && <p className="error-message" role="alert">{error} {snapshot && 'Показаны ранее загруженные данные.'}<button type="button" className="button button--text" onClick={refresh} disabled={loading}>Повторить</button></p>}
     {loading && !snapshot && <p role="status">Загружаем ваши отклики…</p>}
     {snapshot && <>

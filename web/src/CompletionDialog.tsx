@@ -1,13 +1,14 @@
 import { useEffect, useId, useRef, type ReactNode, type KeyboardEvent } from 'react'
 
 /** Native modal focus containment, Escape handling, and focus restoration. */
-export function CompletionDialog({ open, title, description, onClose, children, success = false }: {
+export function CompletionDialog({ open, title, description, onClose, children, success = false, neutral = false }: {
   open: boolean
   title: string
   description: string
   onClose: () => void
   children: ReactNode
   success?: boolean
+  neutral?: boolean
 }) {
   const dialog = useRef<HTMLDialogElement>(null)
   const titleId = useId()
@@ -27,7 +28,7 @@ export function CompletionDialog({ open, title, description, onClose, children, 
 
   function containTab(event: KeyboardEvent<HTMLDialogElement>) {
     if (event.key !== 'Tab') return
-    const buttons = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('button:not(:disabled)'))
+    const buttons = Array.from(event.currentTarget.querySelectorAll<HTMLElement>('button:not(:disabled), summary, a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled)')).filter((element) => element.getClientRects().length > 0)
     const first = buttons[0]
     const last = buttons[buttons.length - 1]
     if (event.shiftKey && (document.activeElement === first || document.activeElement?.tagName === 'H2')) {
@@ -41,7 +42,7 @@ export function CompletionDialog({ open, title, description, onClose, children, 
 
   return <dialog ref={dialog} onKeyDown={containTab} className={`completion-dialog ${success ? 'completion-dialog--success' : ''}`} aria-labelledby={titleId} aria-describedby={descriptionId} onCancel={(event) => { event.preventDefault(); onClose() }}>
     <button type="button" className="dialog-close" aria-label="Закрыть окно" onClick={onClose}>×</button>
-    {success ? <SuccessMark /> : <span className="dialog-symbol" aria-hidden="true">!</span>}
+    {success ? <SuccessMark /> : !neutral && <span className="dialog-symbol" aria-hidden="true">!</span>}
     <h2 id={titleId} tabIndex={-1}>{title}</h2>
     <p id={descriptionId} className="dialog-description">{description}</p>
     {children}

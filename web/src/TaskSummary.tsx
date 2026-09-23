@@ -1,11 +1,7 @@
 import type { TaskCard } from './types'
 
 const fields = [
-  ['expectedResult', 'Что сделать'],
-  ['dataMaterials', 'Материалы'],
-  ['constraints', 'Ограничения'],
-  ['interaction', 'Формат связи'],
-  ['contact', 'Контакт'],
+  ['expectedResult', 'Результат'],
 ] as const
 
 /** Render only supplied facts; missing fields are not estimates or recommendations. */

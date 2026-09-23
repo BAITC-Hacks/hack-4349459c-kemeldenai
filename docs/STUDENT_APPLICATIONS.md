@@ -2,11 +2,11 @@
 
 ## Proposal-writing assistance
 
-The proposal form has an expandable “Помочь составить отклик” helper. It shows the task need, expected result, and success criteria, then creates an editable template preview. Suggested plan steps refer to materials, deliverables, constraints, and success criteria already in the card; missing information becomes a clarification step. This is a deterministic template, not an AI-generated proposal or feasibility assessment. No external provider is called.
+The proposal form has an expandable “Нужна помощь с откликом?” helper. It gives guidance and inserts a suggested plan directly into the main form. Suggested steps use the task materials, deliverables, constraints, and success criteria; missing information becomes a clarification step. This is a deterministic template with no external provider.
 
-The student supplies the idea and timeline. Existing proposal values are copied into the preview but are not selected for replacement by default. Only explicitly selected fields transfer; blank or oversized selected values are rejected. The prototype link is preserved. If the main draft changes while a preview is open, applying the stale preview is blocked. Transfer saves through the existing local draft mechanism; it never submits a proposal. Preview edits themselves are not saved until transferred, as stated in the UI.
+The student supplies the idea and timeline. Replacing an existing plan requires explicit confirmation. If that plan changes before confirmation, replacement is blocked. Idea, timeline, and prototype link are preserved. The updated plan uses existing local draft storage and never submits the proposal. There is no separate preview to maintain.
 
-Tests: `cd web && node --experimental-strip-types --test tests/proposalAssistance.test.mjs tests/proposalDraftStorage.test.mjs`. Browser verification covered preparing a preview and transferring only a plan without modifying other fields.
+Template and storage tests: `cd web && node --experimental-strip-types --test tests/proposalAssistance.test.mjs tests/proposalDraftStorage.test.mjs`.
 
 Self-critique: the helper provides structure, not original technical insight. Teams still need to tailor the suggested steps, evaluate feasibility, and supply realistic timelines.
 
