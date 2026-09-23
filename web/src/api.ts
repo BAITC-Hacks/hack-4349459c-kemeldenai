@@ -7,6 +7,7 @@ import type {
   ProposalInput,
   TaskCard,
   Team,
+  Recommendation,
 } from './types'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') ?? ''
@@ -54,6 +55,18 @@ async function requestArray<T>(path: string): Promise<T[]> {
 }
 
 export const api = {
+  recommendations(teamId: string) {
+    return requestArray<Recommendation>(`/api/teams/${encodeURIComponent(teamId)}/recommendations`)
+  },
+  saveFocus(teamId: string, interests: string[]) {
+    return request<Team>(`/api/teams/${encodeURIComponent(teamId)}/focus`, { method: 'PUT', body: json({ interests }) })
+  },
+  recordClick(teamId: string, taskId: string) {
+    return request(`/api/teams/${encodeURIComponent(teamId)}/clicks/${encodeURIComponent(taskId)}`, { method: 'POST' })
+  },
+  clearClicks(teamId: string) {
+    return request(`/api/teams/${encodeURIComponent(teamId)}/clicks`, { method: 'DELETE' })
+  },
   analyze(description: string, industry: string, card?: EditableCard) {
     return request<AnalysisResult>('/api/analyze', {
       method: 'POST',

@@ -61,6 +61,16 @@ class Team(Base):
     progress_points: Mapped[int] = mapped_column(Integer, default=0)
 
 
+class TaskClick(Base):
+    """One recent positive signal per team/task; repeated clicks cannot inflate weight."""
+
+    __tablename__ = "task_clicks"
+
+    team_id: Mapped[str] = mapped_column(ForeignKey("teams.id"), primary_key=True)
+    task_id: Mapped[str] = mapped_column(ForeignKey("tasks.id"), primary_key=True)
+    clicked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
 class Proposal(Base):
     __tablename__ = "proposals"
 

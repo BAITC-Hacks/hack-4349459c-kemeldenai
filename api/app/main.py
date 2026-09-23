@@ -24,6 +24,7 @@ from api.app.models import (
     TeamProfile,
     to_camel,
 )
+from api.app.recommendations import router as recommendations_router
 from api.app.scoring import score_card
 from api.app.seed import seed_database as seed_demo_database
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
@@ -76,11 +77,12 @@ def create_app(database_url: str | None = None, seed: bool = True) -> FastAPI:
     app = FastAPI(
         title="HackAlem MVP API", version="1.0.0", lifespan=lifespan, responses=error_responses
     )
+    app.include_router(recommendations_router)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
         allow_credentials=False,
-        allow_methods=["GET", "POST", "PUT", "PATCH", "OPTIONS"],
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         allow_headers=["Content-Type", "Authorization"],
     )
 

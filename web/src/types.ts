@@ -59,6 +59,12 @@ export interface Team {
   progressPoints: number
 }
 
+export interface Recommendation {
+  taskId: string
+  relevance: number
+  reasons: string[]
+}
+
 export type ProposalDecision = 'pending' | 'selected' | 'rejected'
 
 export interface Proposal {

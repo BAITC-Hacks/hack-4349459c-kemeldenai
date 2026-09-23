@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { api } from './api'
 import { useAnimatedScore, useReducedMotion } from './motion'
+import { RecommendationFocus, useRecommendations } from './Recommendations'
 import { DemoEntry } from './DemoEntry'
 import { clearDemoPersona, readDemoPersona, saveDemoPersona, type DemoPersona } from './demoSession'
 import { MilestonePanel } from './MilestonePanel'
@@ -194,6 +195,7 @@ function App() {
   const stepHeading = useRef<HTMLHeadingElement>(null)
   const previousStep = useRef(step)
   const [search, setSearch] = useState('')
+  const [catalogSort, setCatalogSort] = useState('recommended')
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false)
   const [proposalDrafts, setProposalDrafts] = useState<Record<string, ProposalDraft>>({})
   const [builderError, setBuilderError] = useState('')
@@ -222,6 +224,8 @@ function App() {
   const [decidingId, setDecidingId] = useState('')
 
   const activeTeam = persona?.role === 'student' ? teams.find((team) => team.id === persona.teamId) : undefined
+  const recommendations = useRecommendations(activeTeam, tasks)
+  const recommendationMap = new Map(recommendations.items.map((item) => [item.taskId, item]))
   const workspace: Workspace | null = persona?.role === 'business' ? 'business' : activeTeam ? 'student' : null
   const dirty = CARD_FIELDS.some((field) => card[field] !== (task?.[field] ?? ''))
   const [restorePending, setRestorePending] = useState(() => !!localStorage.getItem('hackalem.currentTaskId'))
@@ -237,7 +241,7 @@ function App() {
     (!search.trim() || [item.title, item.description, item.industry, item.topic, item.need].join(' ').toLocaleLowerCase('ru').includes(search.trim().toLocaleLowerCase('ru'))) &&
     (!topicFilter || item.topic === topicFilter) &&
     (!readinessFilter || item.readiness === readinessFilter),
-  ).sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
+  ).sort((a, b) => (catalogSort === 'recommended' ? (recommendationMap.get(b.id)?.relevance ?? 0) - (recommendationMap.get(a.id)?.relevance ?? 0) : 0) || (b.score ?? 0) - (a.score ?? 0))
   const selectedTask = visibleTasks.find((item) => item.id === selectedTaskId) ?? visibleTasks[0] ?? null
 
   const proposalDraftKey = selectedTask && activeTeam ? `${activeTeam.id}:${selectedTask.id}` : ''
@@ -254,6 +258,7 @@ function App() {
   }
 
   function openTask(id: string) {
+    recommendations.recordClick(id)
     const mobile = window.matchMedia('(max-width: 820px)').matches
     if (mobile) catalogScroll.current = window.scrollY
     setSelectedTaskId(id)
@@ -738,12 +743,15 @@ function App() {
         ) : (
           <section className={`catalog ${mobileDetailOpen && selectedTask ? 'catalog--detail-open' : ''}`} aria-labelledby="catalog-title">
             <div className="catalog__toolbar"><div><p className="eyebrow">ОТКРЫТЫЙ КАТАЛОГ</p><h2 id="catalog-title">Задачи для команд <span>{visibleTasks.length}</span></h2></div><button className="button button--outline" type="button" disabled={catalogLoading} onClick={() => void refreshCatalog()}><BusyLabel busy={catalogLoading} idle="Обновить" pending="Обновляем…" /></button></div>
-            <div className="filters"><TextInput label="Поиск задач" value={search} onChange={(value) => { setSearch(value); setMobileDetailOpen(false) }} placeholder="Название, отрасль или ключевое слово" /><label className="field"><span className="field__label">Тема</span><select value={topicFilter} onChange={(event) => { setTopicFilter(event.target.value); setMobileDetailOpen(false) }}><option value="">Все темы</option>{topics.map((topic) => <option value={topic} key={topic}>{topic}</option>)}</select></label><label className="field"><span className="field__label">Готовность</span><select value={readinessFilter} onChange={(event) => { setReadinessFilter(event.target.value); setMobileDetailOpen(false) }}><option value="">Любая готовность</option><option value="draft">Требует уточнения · 0–39</option><option value="workable">Рабочая · 40–69</option><option value="ready">Готовая · 70–89</option><option value="priority">Приоритетная · 90–100</option></select></label><p>Сортировка: по рейтингу ↓</p>{(search || topicFilter || readinessFilter) && <button className="button button--text filters__reset" type="button" onClick={() => { setSearch(''); setTopicFilter(''); setReadinessFilter(''); setMobileDetailOpen(false) }}>Сбросить фильтры</button>}</div>
+            {activeTeam && <RecommendationFocus key={activeTeam.id} team={activeTeam} onSaved={(updated) => setTeams((current) => current.map((item) => item.id === updated.id ? updated : item))} onReset={recommendations.refresh} />}
+            <div className="filters"><TextInput label="Поиск задач" value={search} onChange={(value) => { setSearch(value); setMobileDetailOpen(false) }} placeholder="Название, отрасль или ключевое слово" /><label className="field"><span className="field__label">Тема</span><select value={topicFilter} onChange={(event) => { setTopicFilter(event.target.value); setMobileDetailOpen(false) }}><option value="">Все темы</option>{topics.map((topic) => <option value={topic} key={topic}>{topic}</option>)}</select></label><label className="field"><span className="field__label">Готовность</span><select value={readinessFilter} onChange={(event) => { setReadinessFilter(event.target.value); setMobileDetailOpen(false) }}><option value="">Любая готовность</option><option value="draft">Требует уточнения · 0–39</option><option value="workable">Рабочая · 40–69</option><option value="ready">Готовая · 70–89</option><option value="priority">Приоритетная · 90–100</option></select></label><label className="field"><span className="field__label">Сортировка</span><select value={catalogSort} onChange={(event) => setCatalogSort(event.target.value)}><option value="recommended">Рекомендуемые команде</option><option value="priority">По приоритету</option></select></label>{(search || topicFilter || readinessFilter) && <button className="button button--text filters__reset" type="button" onClick={() => { setSearch(''); setTopicFilter(''); setReadinessFilter(''); setMobileDetailOpen(false) }}>Сбросить фильтры</button>}</div>
+            {catalogSort === 'recommended' && recommendations.loading && <p role="status">Подбираем рекомендации…</p>}
+            {recommendations.error && <p role="status">{recommendations.error} <button className="button button--text" onClick={recommendations.refresh}>Повторить</button></p>}
             {catalogLoading && !tasks.length && <LoadingCards label="Загружаем каталог…" />}
             {catalogError && <div className="error-message" role="alert"><span>{catalogError}</span><button className="button button--outline" type="button" disabled={catalogLoading} onClick={() => void refreshCatalog()}>Попробовать снова</button></div>}
             {!catalogLoading && !visibleTasks.length && !catalogError && <p className="state-message">{search || topicFilter || readinessFilter ? 'Ничего не найдено. Измените запрос или сбросьте фильтры.' : 'Опубликованных задач пока нет. Загляните позже.'}</p>}
             <div className="catalog__columns" aria-busy={catalogLoading}>
-              <div className="task-list">{visibleTasks.map((item) => <button type="button" id={`task-tile-${item.id}`} key={item.id} className={`task-tile ${selectedTask?.id === item.id ? 'is-selected' : ''}`} onClick={() => openTask(item.id)} aria-pressed={selectedTask?.id === item.id}><div className="task-tile__meta"><span>{item.industry || 'Отрасль не указана'}</span><span>{item.topic || 'Без темы'}</span></div><h3>{item.title || 'Задача без названия'}</h3><p>{item.need || item.description || 'Описание появится после уточнения.'}</p><div className="task-tile__foot"><span className={`readiness readiness--${item.readiness}`}>{readinessLabels[item.readiness]}</span><strong>{item.score}<small>/100</small></strong></div></button>)}</div>
+              <div className="task-list">{visibleTasks.map((item) => <button type="button" id={`task-tile-${item.id}`} key={item.id} className={`task-tile ${selectedTask?.id === item.id ? 'is-selected' : ''}`} onClick={() => openTask(item.id)} aria-pressed={selectedTask?.id === item.id}><div className="task-tile__meta"><span>{item.industry || 'Отрасль не указана'}</span><span>{item.topic || 'Без темы'}</span></div><h3>{item.title || 'Задача без названия'}</h3><p>{item.need || item.description || 'Описание появится после уточнения.'}</p>{catalogSort === 'recommended' && recommendationMap.get(item.id)?.reasons.map((reason) => <span className="recommendation-reason" key={reason}>{reason}</span>)}<div className="task-tile__foot"><span className={`readiness readiness--${item.readiness}`}>{readinessLabels[item.readiness]}</span><strong>{item.score}<small>/100</small></strong></div></button>)}</div>
               {selectedTask && <article id="task-detail" key={selectedTask.id} className="task-detail"><button className="button button--outline mobile-back" type="button" onClick={returnToCatalog}>← К списку задач</button><div className="task-detail__head"><span className="eyebrow">КАРТОЧКА ЗАДАЧИ</span><ScoreRing score={selectedTask.score ?? 0} compact /></div><h2 id="task-detail-title" tabIndex={-1}>{selectedTask.title || 'Задача без названия'}</h2><p className="task-detail__meta">{selectedTask.industry || 'Отрасль не указана'} · {selectedTask.topic || 'Без темы'}</p><p className="task-detail__summary">{selectedTask.description}</p><div className="task-detail__facts">{(['context', 'need', 'users', 'dataMaterials', 'constraints', 'expectedResult', 'successCriteria', 'contact', 'interaction'] as CardField[]).map((field) => <div key={field}><span>{fieldLabels[field]}</span><p>{selectedTask[field]?.trim() || 'Пока не указано'}</p></div>)}</div><div className="task-detail__bottom"><span className={`readiness readiness--${selectedTask.readiness}`}>{readinessLabels[selectedTask.readiness]}</span><p>Даже при низком рейтинге команда может отправить предложение.</p></div><form className="proposal-form" noValidate onSubmit={(event) => void submitProposal(event)}><div className="section-heading"><span className="section-heading__number">↗</span><div><h3>Предложить решение</h3><p>Опишите подход. Выбор команды останется за бизнесом.</p></div></div><p className="proposal-form__team">Предложение отправляет команда <strong>{activeTeam?.name}</strong></p><Field id="proposal-idea" error={proposalFieldErrors.idea} disabled={proposalBusy} label="Идея решения" required value={proposalForm.idea} onChange={(value) => updateProposal('idea', value)} hint="Как вы предлагаете решить задачу?" /><Field id="proposal-plan" error={proposalFieldErrors.plan} disabled={proposalBusy} label="План работы" required value={proposalForm.plan} onChange={(value) => updateProposal('plan', value)} hint="Основные этапы работы" /><div className="two-columns"><TextInput id="proposal-timeline" error={proposalFieldErrors.timeline} disabled={proposalBusy} label="Срок" required value={proposalForm.timeline} onChange={(value) => updateProposal('timeline', value)} placeholder="Например, 2 недели" /><TextInput id="proposal-prototypeUrl" error={proposalFieldErrors.prototypeUrl} required disabled={proposalBusy} label="Ссылка на прототип" type="url" value={proposalForm.prototypeUrl} onChange={(value) => updateProposal('prototypeUrl', value)} placeholder="https://…" /></div>{proposalSuccessKey === proposalDraftKey && <p className="notice proposal-success" role="status"><span className="save-check" aria-hidden="true">✓</span>Предложение отправлено. Решение остаётся за представителем бизнеса.</p>}{proposalError && <p className="error-message" role="alert">{proposalError}</p>}<button className="button button--accent" disabled={proposalBusy} type="submit"><BusyLabel busy={proposalBusy} idle="Отправить предложение" pending="Отправляем…" /> <ArrowIcon /></button></form></article>}
             </div>
           </section>

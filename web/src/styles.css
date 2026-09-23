@@ -453,3 +453,9 @@ fieldset:disabled { opacity: .7; }
   .button:not(:disabled):hover, .button:not(:disabled):active, .task-tile:hover { transform: none; }
 }
 .button-label__hidden .spinner { animation: none; }
+.recommendation-focus { margin: 20px 0; padding: 20px; border: 1px solid #dce7df; border-radius: 12px; background: #f3f8f3; }
+.recommendation-focus strong { color: #1a594e; }
+.recommendation-focus p { color: #567267; font-size: 13px; line-height: 1.6; }
+.recommendation-focus form { display: flex; align-items: end; gap: 12px; flex-wrap: wrap; }
+.recommendation-focus .field { flex: 1 1 260px; }
+.recommendation-reason { display: block; margin: 8px 0; font-size: 12px; line-height: 1.5; color: #1a6553; }
