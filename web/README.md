@@ -52,9 +52,13 @@ Use a separate seeded test database when another test run is active. Verify:
 
 ## Motion and loading
 
-Step panels enter over 200ms; the active step background moves between positions. On phones, task details enter from the side over 240ms, and the back button restores the list's prior scroll offset. Navigation changes remain immediately interactive, without waiting for an exit animation.
+The portal uses the Graphite & cobalt visual system: graphite navigation and readiness, a cool gray canvas, white editing surfaces, and cobalt primary actions. Success, warning, and error colors retain their meaning. See [the visual-system notes](../docs/VISUAL_SYSTEM.md) for tokens, layout decisions, and verification.
+
+Step panels enter over 200ms; the active step background moves between positions. On phones, task details enter from the side over 220ms, and the back button restores the list's prior scroll offset. Navigation changes remain immediately interactive, without waiting for an exit animation.
 
 The readiness ring animates confirmed score changes over 520ms, cancelling an interrupted animation before starting another. Initial scores and catalog selection render immediately. Screen readers receive the confirmed target score, not every intermediate number. `prefers-reduced-motion` disables movement, counting, pulsing, spinning, and smooth scrolling, including when the preference changes during a session.
+
+A successful confirmation shows a receipt with the previous verified score, the new score, and the actual change. The first confirmation has no invented baseline. Draft saves do not create receipts; editing hides a receipt until the next confirmation. The previous confirmed score is kept per task during the current session.
 
 Initial loads use skeleton cards. Refresh retains existing results and shows a compact loading state on the refresh button. Busy labels reserve the space needed by both states; required fields reserve validation-message space. Saving a draft briefly displays a nearby checkmark. No additional animation package is required.
 

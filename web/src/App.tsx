@@ -3,6 +3,7 @@ import { transferClarificationAnswers } from './clarificationAnswers'
 import { reconcileTaskSuggestions, removeSuggestionEdit } from './taskSuggestions'
 import { restoreTask } from './taskRestore'
 import { catalogTopics, matchesTopic } from './catalogTopics'
+import { confirmedScore, scoreReceipt, type ConfirmedScore } from './scoreReceipt'
 import { api } from './api'
 import { TeamRank, RankBadge } from './TeamRank'
 import { useBookmarks } from './bookmarks'
@@ -195,6 +196,8 @@ function App() {
   const [businessPage, setBusinessPage] = useState<BusinessPage>('builder')
   const [card, setCard] = useState<EditableCard>({ ...EMPTY_CARD })
   const [task, setTask] = useState<TaskCard | null>(null)
+  const lastConfirmedScore = useRef<ConfirmedScore | null>(null)
+  const [confirmationReceipt, setConfirmationReceipt] = useState<ReturnType<typeof scoreReceipt>>(null)
   const [questions, setQuestions] = useState<ClarifyingQuestion[]>([])
   const [questionSource, setQuestionSource] = useState<'ai' | 'mixed' | 'fallback' | null>(null)
   const [suggestions, setSuggestions] = useState<SuggestedField[]>([])
@@ -392,6 +395,8 @@ function App() {
     const result = await restoreTask(id, api.task)
     if (request !== restoreRequest.current) return
     if (result.kind === 'restored') {
+      lastConfirmedScore.current = confirmedScore(result.task)
+      setConfirmationReceipt(null)
       setTask(result.task)
       setCard(editableFromTask(result.task))
       setStep(result.task.confirmedAt ? 'publish' : 'review')
@@ -493,6 +498,8 @@ function App() {
   }
 
   function keepTask(next: TaskCard) {
+    const score = confirmedScore(next)
+    if (score) lastConfirmedScore.current = score
     setSavedAt(new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }))
     setTask(next)
     setCard(editableFromTask(next))
@@ -527,6 +534,7 @@ function App() {
       return
     }
     setSavedFeedback(false)
+    setConfirmationReceipt(null)
     setBuilderAction('confirm')
     try {
       let id = task?.id
@@ -536,6 +544,7 @@ function App() {
         id = draft.id
       }
       const next = await api.confirmTask(id, card)
+      setConfirmationReceipt(scoreReceipt(lastConfirmedScore.current, next))
       keepTask(next)
       setStep('publish')
       if (next.status === 'published') setNotice('Изменения сохранены. Команды видят обновлённую карточку.')
@@ -584,6 +593,8 @@ function App() {
     setFieldErrors({})
     setStep('description')
     setQuestionSource(null)
+    lastConfirmedScore.current = null
+    setConfirmationReceipt(null)
     setTask(null)
     setCard({ ...EMPTY_CARD })
     setQuestions([])
@@ -691,7 +702,14 @@ function App() {
           <span className="brand__mark">S<span>.</span></span>
           <span className="brand__name">AI Sana <small>Практические задачи</small></span>
         </div>
-        <div className="persona-header"><span><small>{workspace === 'business' ? 'БИЗНЕС' : 'КОМАНДА'}</small><strong>{workspace === 'business' ? 'Демо-компания' : activeTeam?.name}</strong>{workspace === 'student' && <button type="button" className="team-progress-trigger" aria-label="Ранг и прогресс команды" onClick={() => setShowTeamProgress(true)}><RankBadge points={activeTeam?.progressPoints ?? 0} /></button>}</span><button className="button button--outline" type="button" disabled={builderBusy || proposalBusy} onClick={changeParticipant}>Сменить участника</button></div>
+        <div className="persona-header">
+          <div className="persona-header__identity">
+            <small className="persona-header__label">{workspace === 'business' ? 'БИЗНЕС' : 'КОМАНДА'}</small>
+            <strong className="persona-header__name">{workspace === 'business' ? 'Демо-компания' : activeTeam?.name}</strong>
+            {workspace === 'student' && <button type="button" className="team-progress-trigger persona-header__progress" aria-label={`Ранг и прогресс команды: ${activeTeam?.progressPoints ?? 0} баллов`} aria-haspopup="dialog" aria-expanded={showTeamProgress} onClick={() => setShowTeamProgress(true)}><RankBadge points={activeTeam?.progressPoints ?? 0} /><span className="persona-header__points">{activeTeam?.progressPoints ?? 0} баллов</span><span aria-hidden="true">↗</span></button>}
+          </div>
+          <button className="button button--outline persona-header__switch" type="button" disabled={builderBusy || proposalBusy} onClick={changeParticipant}>Сменить участника</button>
+        </div>
         <span className="topbar__caption">Открытый выбор команд</span>
       </header>
 
@@ -722,7 +740,7 @@ function App() {
           </div>
         </CompletionDialog>
         {notice && <div className="notice" role="status"><span>{notice}</span><button type="button" aria-label="Закрыть уведомление" onClick={() => setNotice('')}>×</button></div>}
-        {activeTeam && <CompletionDialog neutral open={showTeamProgress} title={`Прогресс команды ${activeTeam.name}`} description="Баллы за завершённые этапы, подтверждённые бизнесом." onClose={() => setShowTeamProgress(false)}><TeamRank team={activeTeam} /></CompletionDialog>}
+        {activeTeam && <CompletionDialog neutral open={showTeamProgress} title="Ранг и прогресс" description="Баллы за завершённые этапы, подтверждённые бизнесом." onClose={() => setShowTeamProgress(false)}><TeamRank team={activeTeam} /></CompletionDialog>}
         {workspace === 'student' && <nav className="subnav student-navigation" aria-label="Раздел команды">
           <button type="button" aria-current={studentPage === 'catalog' && !savedOnly ? 'page' : undefined} className={studentPage === 'catalog' && !savedOnly ? 'is-active' : ''} onClick={() => { setStudentPage('catalog'); setSavedOnly(false); setMobileDetailOpen(false) }}>Каталог</button>
           <button type="button" aria-current={studentPage === 'catalog' && savedOnly ? 'page' : undefined} className={studentPage === 'catalog' && savedOnly ? 'is-active' : ''} onClick={() => { setStudentPage('catalog'); setSavedOnly(true); setMobileDetailOpen(false) }}>Сохранённые ({bookmarks.ids.length})</button>
@@ -790,11 +808,17 @@ function App() {
                     {builderError && <p className="error-message" role="alert">{builderError}</p>}
                     <div className="builder-actionbar__status" role="status"><strong>{savedFeedback && <span className="save-check" aria-hidden="true">✓</span>}{restorePending ? 'Загружаем карточку…' : restoreFailure ? 'Карточку нужно восстановить' : builderAction === 'save' ? 'Сохраняем черновик…' : hasUnappliedAnswers ? 'Ответы ещё не перенесены в карточку' : dirty ? 'Есть несохранённые изменения' : task ? task.status === 'published' ? 'Опубликовано' : savedAt ? `Сохранено в ${savedAt}` : 'Сохранено' : 'Новая карточка'}</strong><span>Шаг {currentStepIndex + 1} из 4{step === 'publish' && dirty ? ' · Сначала подтвердите изменения' : ''}</span></div>
                     <div className="builder-actionbar__buttons">
-                      {task?.status !== 'published' && <button className="button button--outline" type="button" onClick={() => void saveDraft()} disabled={fieldsDisabled || (!dirty && !!task)}><BusyLabel busy={builderAction === 'save'} idle={savedFeedback && !dirty ? 'Черновик сохранён' : 'Сохранить черновик'} pending="Сохраняем…" /></button>}
-                      {step === 'description' && <><button className="button button--text" type="button" disabled={fieldsDisabled} onClick={() => setStep('review')}>Заполнить самостоятельно</button><button className="button button--dark" type="button" disabled={fieldsDisabled} onClick={() => void analyze()}><BusyLabel busy={builderAction === 'analyze'} idle="Получить вопросы" pending="Готовим вопросы…" /> <ArrowIcon /></button></>}
-                      {step === 'questions' && <button className="button button--dark" type="button" disabled={fieldsDisabled} onClick={applyAnswers}>{Object.values(answers).some((value) => value.trim()) ? 'Перенести ответы и продолжить' : 'Продолжить без ответов'} <ArrowIcon /></button>}
-                      {step === 'review' && <button className="button button--dark" type="button" onClick={() => void confirm()} disabled={fieldsDisabled}><BusyLabel busy={builderAction === 'confirm'} idle={task?.confirmedAt ? 'Подтвердить изменения' : 'Подтвердить карточку'} pending="Подтверждаем…" /> <ArrowIcon /></button>}
-                      {step === 'publish' && <><button className="button button--outline" type="button" disabled={fieldsDisabled} onClick={() => setStep('review')}>Редактировать карточку</button>{task?.status !== 'published' ? <button className="button button--accent" type="button" onClick={() => void publish()} aria-describedby="publish-help" disabled={fieldsDisabled || !publishReady}><BusyLabel busy={builderAction === 'publish'} idle="Опубликовать" pending="Публикуем…" /> <ArrowIcon /></button> : <button className="button button--dark" type="button" onClick={() => { changeParticipant(); setSavedOnly(false); setCatalogSort('priority'); setSelectedTaskId(task.id); setSearch(''); setTopicFilter(''); setReadinessFilter(''); setMobileDetailOpen(true); void refreshCatalog() }}>Открыть как команда <ArrowIcon /></button>}</>}
+                      <div className="builder-actionbar__primary">
+                        {step === 'description' && <button className="button button--dark" type="button" disabled={fieldsDisabled} onClick={() => void analyze()}><BusyLabel busy={builderAction === 'analyze'} idle="Получить вопросы" pending="Готовим вопросы…" /> <ArrowIcon /></button>}
+                        {step === 'questions' && <button className="button button--dark" type="button" disabled={fieldsDisabled} onClick={applyAnswers}>{Object.values(answers).some((value) => value.trim()) ? 'Перенести ответы и продолжить' : 'Продолжить без ответов'} <ArrowIcon /></button>}
+                        {step === 'review' && <button className="button button--dark" type="button" onClick={() => void confirm()} disabled={fieldsDisabled}><BusyLabel busy={builderAction === 'confirm'} idle={task?.confirmedAt ? 'Подтвердить изменения' : 'Подтвердить карточку'} pending="Подтверждаем…" /> <ArrowIcon /></button>}
+                        {step === 'publish' && (task?.status !== 'published' ? <button className="button button--accent" type="button" onClick={() => void publish()} aria-describedby="publish-help" disabled={fieldsDisabled || !publishReady}><BusyLabel busy={builderAction === 'publish'} idle="Опубликовать" pending="Публикуем…" /> <ArrowIcon /></button> : <button className="button button--dark" type="button" onClick={() => { changeParticipant(); setSavedOnly(false); setCatalogSort('priority'); setSelectedTaskId(task.id); setSearch(''); setTopicFilter(''); setReadinessFilter(''); setMobileDetailOpen(true); void refreshCatalog() }}>Открыть как команда <ArrowIcon /></button>)}
+                      </div>
+                      <div className="builder-actionbar__secondary">
+                        {task?.status !== 'published' && <button className="button button--outline" type="button" onClick={() => void saveDraft()} disabled={fieldsDisabled || (!dirty && !!task)}><BusyLabel busy={builderAction === 'save'} idle={savedFeedback && !dirty ? 'Черновик сохранён' : 'Сохранить черновик'} pending="Сохраняем…" /></button>}
+                        {step === 'description' && <button className="button button--text" type="button" disabled={fieldsDisabled} onClick={() => setStep('review')}>Заполнить самостоятельно</button>}
+                        {step === 'publish' && <button className="button button--outline" type="button" disabled={fieldsDisabled} onClick={() => setStep('review')}>Редактировать карточку</button>}
+                      </div>
                     </div>
                     {savedFeedback && <p className="save-receipt" role="status">{hasUnappliedAnswers ? 'Карточка сохранена. Ответы на вопросы нужно отдельно перенести в карточку и сохранить.' : 'Черновик сохранён. Команды увидят задачу только после публикации.'}</p>}
                     {step === 'publish' && task?.status !== 'published' && <p id="publish-help" className="builder-actionbar__help">{publishReady ? 'После публикации задачу увидят все команды.' : 'Сначала подтвердите текущую версию карточки.'}</p>}
@@ -804,6 +828,11 @@ function App() {
                 <aside className="score-panel" aria-label="Рейтинг готовности задачи">
                   <p className="eyebrow">ГОТОВНОСТЬ ЗАДАЧИ</p>
                   <div className="score-panel__top"><ScoreRing score={task?.confirmedAt ? task.score : null} /><div><span className="score-panel__label">{task?.confirmedAt ? readinessLabels[task.readiness] : 'Ещё не оценена'}</span><p>{task?.status === 'published' ? 'Опубликована в каталоге' : 'Черновик задачи'}</p></div></div>
+                  {confirmationReceipt && confirmationReceipt.taskId === task?.id && task.confirmedAt && !dirty && <div key={task.confirmedAt} className={`score-receipt score-receipt--${confirmationReceipt.tone}`} role="status">
+                    <span className="score-receipt__label">{confirmationReceipt.before === null ? 'Готовность подтверждена' : 'Готовность обновлена'}</span>
+                    <strong className="score-receipt__values">{confirmationReceipt.before !== null && <><span>{confirmationReceipt.before}</span><span aria-hidden="true"> → </span><span className="sr-only">изменена на </span></>}{confirmationReceipt.after}<small> / 100</small></strong>
+                    <span className="score-receipt__delta">{confirmationReceipt.delta === null ? 'Оценка сохранена' : confirmationReceipt.delta === 0 ? 'Оценка без изменений' : `${confirmationReceipt.delta > 0 ? '+' : ''}${confirmationReceipt.delta} к готовности`}</span>
+                  </div>}
                   <div className="score-panel__divider" />
                   {dirty && task?.confirmedAt && <p className="inline-note">Оценка подтверждённой версии. Обновится после подтверждения изменений.</p>}
                   <h3>Как складывается рейтинг</h3>
@@ -842,7 +871,7 @@ function App() {
             <div className="catalog-search-row"><TextInput label="Поиск задач" value={search} onChange={(value) => { setSearch(value); setMobileDetailOpen(false) }} placeholder="Название или ключевое слово" /><label className="field"><span className="field__label">Сортировка</span><select value={catalogSort} onChange={(event) => setCatalogSort(event.target.value)}><option value="priority">По готовности задачи</option><option value="recommended">Рекомендуемые команде</option></select></label></div>
             <div className="catalog-options">
               <details className="catalog-disclosure"><summary>Фильтры{(topicFilter || readinessFilter) ? ' · применены' : ''}</summary><div className="filters"><label className="field"><span className="field__label">Тема</span><select value={topicFilter} onChange={(event) => { setTopicFilter(event.target.value); setMobileDetailOpen(false) }}><option value="">Все темы</option>{topics.map((topic) => <option value={topic} key={topic}>{topic}</option>)}</select></label><label className="field"><span className="field__label">Готовность задачи</span><select value={readinessFilter} onChange={(event) => { setReadinessFilter(event.target.value); setMobileDetailOpen(false) }}><option value="">Любая готовность</option><option value="draft">Требует уточнения · 0–39</option><option value="workable">Рабочая · 40–69</option><option value="ready">Готовая · 70–89</option><option value="priority">Приоритетная · 90–100</option></select></label></div></details>
-              {activeTeam && <details className="catalog-disclosure"><summary>Настройки рекомендаций</summary><RecommendationFocus key={activeTeam.id} team={activeTeam} onSaved={(updated) => setTeams((current) => current.map((item) => item.id === updated.id ? updated : item))} onReset={recommendations.refresh} /></details>}
+              {activeTeam && <RecommendationFocus key={activeTeam.id} team={activeTeam} onSaved={(updated) => setTeams((current) => current.map((item) => item.id === updated.id ? updated : item))} onReset={recommendations.refresh} />}
               {(search || topicFilter || readinessFilter) && <button className="button button--text" type="button" onClick={() => { setSearch(''); setTopicFilter(''); setReadinessFilter(''); setMobileDetailOpen(false) }}>Сбросить фильтры</button>}
             </div>
             {recommendations.feedbackError && <p className="error-message" role="alert">{recommendations.feedbackError}</p>}
@@ -853,7 +882,7 @@ function App() {
             {catalogError && <div className="error-message" role="alert"><span>{catalogError}</span><button className="button button--outline" type="button" disabled={catalogLoading} onClick={() => void refreshCatalog()}>Попробовать снова</button></div>}
             {!catalogLoading && !visibleTasks.length && !catalogError && (!savedOnly || (!bookmarks.loading && !bookmarks.error && bookmarks.ids.length > 0)) && <p className="state-message">{search || topicFilter || readinessFilter || savedOnly ? 'Ничего не найдено. Измените запрос или сбросьте фильтры.' : recommendations.items.some((item) => item.dismissed) ? 'Все подходящие задачи отмечены как неинтересные. Верните их из списка выше или выберите сортировку по приоритету.' : 'Опубликованных задач пока нет. Загляните позже.'}</p>}
             <div className="catalog__columns" aria-busy={catalogLoading}>
-              <div className="task-list">{visibleTasks.map((item) => <div className="task-tile-group" key={item.id}><button type="button" id={`task-tile-${item.id}`} key={item.id} className={`task-tile ${selectedTask?.id === item.id ? 'is-selected' : ''}`} onClick={() => openTask(item.id)} aria-pressed={selectedTask?.id === item.id}><div className="task-tile__meta"><span>{item.industry || 'Отрасль не указана'}</span><span>{item.topic || 'Без темы'}</span></div><h3>{item.title || 'Задача без названия'}</h3><p>{item.need || item.description || 'Описание появится после уточнения.'}</p><TaskSummary task={item} />{catalogSort === 'recommended' && recommendationMap.get(item.id)?.reasons.slice(0, 1).map((reason) => <span className="recommendation-reason" key={reason}>{reason}</span>)}<div className="task-tile__foot"><span className={`readiness readiness--${item.readiness}`}>{readinessLabels[item.readiness]}</span><strong aria-label={`Готовность задачи ${item.score} из 100`}>{item.score}<small>/100</small></strong></div></button><button type="button" className="button button--text bookmark-button" aria-pressed={bookmarks.ids.includes(item.id)} aria-label={`${bookmarks.ids.includes(item.id) ? 'Убрать из сохранённых' : 'Сохранить задачу'}: ${item.title}`} disabled={bookmarks.loading || bookmarks.busy || !!bookmarks.error} onClick={() => void bookmarks.toggle(item.id).then((changed) => { if (changed) recommendations.refresh() })}>{bookmarks.ids.includes(item.id) ? '★ Сохранено · убрать' : '☆ Сохранить задачу'}</button><details className="task-more"><summary aria-label={`Другие действия: ${item.title}`}>Ещё ⋯</summary><button type="button" className="button button--text" disabled={recommendations.feedbackBusy || recommendations.loading} onClick={() => void recommendations.dismiss(item.id, !recommendationMap.get(item.id)?.dismissed)}>{recommendationMap.get(item.id)?.dismissed ? 'Вернуть в рекомендации' : 'Не интересно'}</button></details></div>)}</div>
+              <div className="task-list">{visibleTasks.map((item) => <div className="task-tile-group" key={item.id}><button type="button" id={`task-tile-${item.id}`} key={item.id} className={`task-tile ${selectedTask?.id === item.id ? 'is-selected' : ''}`} onClick={() => openTask(item.id)} aria-pressed={selectedTask?.id === item.id}><div className="task-tile__meta"><span>{item.industry || 'Отрасль не указана'}</span><span>{item.topic || 'Без темы'}</span></div><h3>{item.title || 'Задача без названия'}</h3><TaskSummary task={item} />{catalogSort === 'recommended' && recommendationMap.get(item.id)?.reasons.slice(0, 1).map((reason) => <span className="recommendation-reason" key={reason}>{reason}</span>)}<div className="task-tile__foot"><span className={`readiness readiness--${item.readiness}`}>{readinessLabels[item.readiness]}</span><strong aria-label={`Готовность задачи ${item.score} из 100`}>{item.score}<small>/100</small></strong></div></button><button type="button" className="button button--text bookmark-button" aria-pressed={bookmarks.ids.includes(item.id)} aria-label={`${bookmarks.ids.includes(item.id) ? 'Убрать из сохранённых' : 'Сохранить задачу'}: ${item.title}`} disabled={bookmarks.loading || bookmarks.busy || !!bookmarks.error} onClick={() => void bookmarks.toggle(item.id).then((changed) => { if (changed) recommendations.refresh() })}>{bookmarks.ids.includes(item.id) ? '★ Сохранено · убрать' : '☆ Сохранить задачу'}</button><details className="task-more"><summary aria-label={`Другие действия: ${item.title}`}>Ещё ⋯</summary><button type="button" className="button button--text" disabled={recommendations.feedbackBusy || recommendations.loading} onClick={() => void recommendations.dismiss(item.id, !recommendationMap.get(item.id)?.dismissed)}>{recommendationMap.get(item.id)?.dismissed ? 'Вернуть в рекомендации' : 'Не интересно'}</button></details></div>)}</div>
               {selectedTask && <article id="task-detail" key={selectedTask.id} className="task-detail"><button className="button button--outline mobile-back" type="button" onClick={returnToCatalog}>← К списку задач</button><div className="task-detail__head"><span className="eyebrow">КАРТОЧКА ЗАДАЧИ</span><ScoreRing score={selectedTask.score ?? 0} compact /></div><h2 id="task-detail-title" tabIndex={-1}>{selectedTask.title || 'Задача без названия'}</h2><p className="task-detail__meta">{selectedTask.industry || 'Отрасль не указана'} · {selectedTask.topic || 'Без темы'}</p><p className="task-detail__summary">{selectedTask.description}</p><div className="task-detail__facts">{(['context', 'need', 'users', 'dataMaterials', 'constraints', 'expectedResult', 'successCriteria', 'contact', 'interaction'] as CardField[]).map((field) => <div key={field}><span>{fieldLabels[field]}</span><p>{selectedTask[field]?.trim() || 'Пока не указано'}</p></div>)}</div><div className="task-detail__bottom"><span className={`readiness readiness--${selectedTask.readiness}`}>{readinessLabels[selectedTask.readiness]}</span><p>Даже при низком рейтинге команда может отправить предложение.</p></div><form className="proposal-form" noValidate onSubmit={(event) => void submitProposal(event)}><div className="section-heading"><span className="section-heading__number">↗</span><div><h3>Предложить решение</h3><p>Опишите подход. Выбор команды останется за бизнесом.</p></div></div><p className="proposal-form__team">Предложение отправляет команда <strong>{activeTeam?.name}</strong></p><p className="proposal-draft-status" role="status">{proposalDraftStorage.errors[proposalDraftKey] || (Object.values(proposalForm).some(Boolean) ? 'Черновик сохранён в этом браузере для этой команды и задачи.' : 'Черновик сохраняется автоматически в этом браузере. На другом устройстве он недоступен.')}{proposalDraftStorage.errors[proposalDraftKey] && <button type="button" className="button button--text" onClick={() => proposalDraftStorage.retry(proposalDraftKey)}>Повторить сохранение</button>}</p>{proposalDraftStorage.loadError && <p className="error-message" role="alert">{proposalDraftStorage.loadError}</p>}<ProposalAssistant key={proposalDraftKey} task={selectedTask} draft={proposalForm} disabled={proposalBusy} onApply={(next) => { setProposalForm(next); setProposalFieldErrors({}); setProposalError(''); setProposalSuccessKey(null) }} /><Field id="proposal-idea" error={proposalFieldErrors.idea} disabled={proposalBusy} label="Идея решения" required value={proposalForm.idea} onChange={(value) => updateProposal('idea', value)} hint="Как вы предлагаете решить задачу?" /><Field id="proposal-plan" error={proposalFieldErrors.plan} disabled={proposalBusy} label="План работы" required value={proposalForm.plan} onChange={(value) => updateProposal('plan', value)} hint="Основные этапы работы" /><div className="two-columns"><TextInput id="proposal-timeline" error={proposalFieldErrors.timeline} disabled={proposalBusy} label="Срок" required value={proposalForm.timeline} onChange={(value) => updateProposal('timeline', value)} placeholder="Например, 2 недели" /><TextInput id="proposal-prototypeUrl" error={proposalFieldErrors.prototypeUrl} required disabled={proposalBusy} label="Ссылка на прототип" type="url" value={proposalForm.prototypeUrl} onChange={(value) => updateProposal('prototypeUrl', value)} placeholder="https://…" /></div>{proposalSuccessKey === proposalDraftKey && <p className="notice proposal-success" role="status"><span className="save-check" aria-hidden="true">✓</span>Предложение отправлено. Решение остаётся за представителем бизнеса. <button type="button" className="button button--text" onClick={() => setStudentPage('applications')}>Перейти в мои отклики</button></p>}{proposalError && <p className="error-message" role="alert">{proposalError}</p>}<button className="button button--accent" disabled={proposalBusy} type="submit"><BusyLabel busy={proposalBusy} idle="Отправить предложение" pending="Отправляем…" /> <ArrowIcon /></button></form></article>}
             </div>
           </section>

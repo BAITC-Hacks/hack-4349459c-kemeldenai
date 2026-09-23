@@ -55,9 +55,14 @@ export function RecommendationFocus({ team, onSaved, onReset }: { team: Team; on
   const [technologies, setTechnologies] = useState(team.technologies.join(', '))
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
+  const [messageIsError, setMessageIsError] = useState(false)
+  const focusSummary = team.interests.length
+    ? `${team.interests.slice(0, 3).join(' · ')}${team.interests.length > 3 ? ` · ещё ${team.interests.length - 3}` : ''}`
+    : 'Добавьте фокус, навыки и технологии команды'
   async function save() {
     setBusy(true)
     setMessage('')
+    setMessageIsError(false)
     try {
       const interests = focus.split(',').map((value) => value.trim()).filter(Boolean)
       const updated = await api.saveFocus(team.id, interests, skills.split(',').map((value) => value.trim()).filter(Boolean), technologies.split(',').map((value) => value.trim()).filter(Boolean))
@@ -66,28 +71,45 @@ export function RecommendationFocus({ team, onSaved, onReset }: { team: Team; on
       setTechnologies(updated.technologies.join(', '))
       onSaved(updated)
       setMessage('Профиль команды сохранён.')
-    } catch (error) { setMessage(error instanceof Error ? error.message : 'Не удалось сохранить фокус.') }
+    } catch (error) {
+      setMessageIsError(true)
+      setMessage(error instanceof Error ? error.message : 'Не удалось сохранить фокус.')
+    }
     finally { setBusy(false) }
   }
   async function reset() {
     setBusy(true)
     setMessage('')
+    setMessageIsError(false)
     try {
       await api.clearClicks(team.id)
       onReset()
       setMessage('История просмотров команды очищена.')
-    } catch { setMessage('Не удалось очистить историю. Попробуйте ещё раз.') }
+    } catch {
+      setMessageIsError(true)
+      setMessage('Не удалось очистить историю. Попробуйте ещё раз.')
+    }
     finally { setBusy(false) }
   }
   return <section className="recommendation-focus" aria-label="Настройки рекомендаций">
-    <div><strong>Подбираем задачи для {team.name}</strong><p>Учитываем фокус, навыки и открытые вами карточки. История и настройки общие для выбранной демо-команды.</p></div>
-    <form onSubmit={(event) => { event.preventDefault(); void save() }}>
-      <label className="field"><span className="field__label">Фокус команды — через запятую</span><input value={focus} maxLength={972} disabled={busy} onChange={(event) => setFocus(event.target.value)} placeholder="Экология, аналитика, карты" /><span className="muted">До 12 направлений, каждое до 80 символов.</span></label>
-      <label className="field"><span className="field__label">Навыки — через запятую</span><input value={skills} maxLength={972} disabled={busy} onChange={(event) => setSkills(event.target.value)} placeholder="Аналитика, дизайн" /><span className="muted">До 12 навыков, каждый до 80 символов.</span></label>
-      <label className="field"><span className="field__label">Технологии — через запятую</span><input value={technologies} maxLength={972} disabled={busy} onChange={(event) => setTechnologies(event.target.value)} placeholder="Python, React" /><span className="muted">До 12 технологий, каждая до 80 символов.</span></label>
-      <button className="button button--dark" disabled={busy} type="submit">{busy ? 'Сохраняем…' : 'Сохранить профиль'}</button>
-      <button className="button button--text" disabled={busy} type="button" onClick={() => void reset()}>Сбросить историю</button>
-    </form>
-    {message && <p role="status">{message}</p>}
+    <details>
+      <summary className="recommendation-focus__summary">
+        <span className="recommendation-focus__intro"><strong className="recommendation-focus__title">Настроить рекомендации</strong><span className="recommendation-focus__context">{focusSummary}</span></span>
+        <span className="recommendation-focus__toggle" aria-hidden="true">⌄</span>
+      </summary>
+      <div className="recommendation-focus__body">
+        <p>Подбираем задачи для {team.name} по фокусу, навыкам и открытым карточкам. История и настройки общие для выбранной демо-команды.</p>
+        <form onSubmit={(event) => { event.preventDefault(); void save() }}>
+          <label className="field"><span className="field__label">Фокус команды — через запятую</span><input value={focus} maxLength={972} disabled={busy} onChange={(event) => setFocus(event.target.value)} placeholder="Экология, аналитика, карты" /><span className="muted">До 12 направлений, каждое до 80 символов.</span></label>
+          <label className="field"><span className="field__label">Навыки — через запятую</span><input value={skills} maxLength={972} disabled={busy} onChange={(event) => setSkills(event.target.value)} placeholder="Аналитика, дизайн" /><span className="muted">До 12 навыков, каждый до 80 символов.</span></label>
+          <label className="field"><span className="field__label">Технологии — через запятую</span><input value={technologies} maxLength={972} disabled={busy} onChange={(event) => setTechnologies(event.target.value)} placeholder="Python, React" /><span className="muted">До 12 технологий, каждая до 80 символов.</span></label>
+          <div className="recommendation-focus__actions">
+            <button className="button button--dark" disabled={busy} type="submit">{busy ? 'Сохраняем…' : 'Сохранить профиль'}</button>
+            <button className="button button--text" disabled={busy} type="button" onClick={() => void reset()}>Сбросить историю</button>
+          </div>
+        </form>
+      </div>
+    </details>
+    {(busy || message) && <p className={`recommendation-focus__status${messageIsError ? ' recommendation-focus__status--error' : ''}`} role={messageIsError ? 'alert' : 'status'}>{busy ? 'Обновляем рекомендации…' : message}</p>}
   </section>
 }

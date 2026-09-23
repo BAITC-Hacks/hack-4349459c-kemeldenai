@@ -83,3 +83,7 @@ backgrounds. Consolidate remaining hard-coded greens into semantic color tokens.
 A separate interactive concept board compares Ink & paper, Forest & copper, and
 Graphite & cobalt using business and student layouts. It is a design proposal;
 the full palette/layout redesign is not applied by these bug fixes.
+
+Update: the user subsequently selected Graphite & cobalt and approved the full
+redesign. Its implementation and verification are recorded in
+[VISUAL_SYSTEM.md](VISUAL_SYSTEM.md).
