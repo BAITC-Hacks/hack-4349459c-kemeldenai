@@ -1,4 +1,4 @@
-"""One server-side NVIDIA request, validated questions, deterministic fallback."""
+"""One server-side OpenAI request, validated questions, deterministic fallback."""
 
 import json
 import logging
@@ -53,7 +53,7 @@ def _candidate_fields(card: dict) -> list[str]:
 async def _request_model(api_key: str, model: str, payload: dict) -> str:
     async with httpx.AsyncClient(timeout=12.0) as client:
         response = await client.post(
-            "https://integrate.api.nvidia.com/v1/chat/completions",
+            "https://api.openai.com/v1/chat/completions",
             headers={"Authorization": f"Bearer {api_key}"},
             json={
                 "model": model,
@@ -64,6 +64,7 @@ async def _request_model(api_key: str, model: str, payload: dict) -> str:
                 "temperature": 0.2,
                 "max_tokens": 900,
                 "stream": False,
+                "response_format": {"type": "json_object"},
             },
         )
         response.raise_for_status()
@@ -77,7 +78,7 @@ async def analyze_questions(description: str, industry: str, card: dict | None =
     questions: list[dict] = []
     seen_fields: set[str] = set()
     seen_questions: set[str] = set()
-    api_key = os.getenv("NVIDIA_API_KEY", "").strip()
+    api_key = os.getenv("OPENAI_API_KEY", "").strip()
     if api_key:
         payload = {
             "description": description,
@@ -89,7 +90,7 @@ async def analyze_questions(description: str, industry: str, card: dict | None =
         try:
             content = await _request_model(
                 api_key,
-                os.getenv("NVIDIA_MODEL", "").strip() or "meta/llama-3.1-8b-instruct",
+                os.getenv("OPENAI_MODEL", "").strip() or "gpt-4o-mini",
                 payload,
             )
             if not isinstance(content, str) or len(content) > 20_000:

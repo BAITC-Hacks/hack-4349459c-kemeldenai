@@ -12,8 +12,8 @@ def run(card=None):
 
 @pytest.fixture(autouse=True)
 def no_credentials(monkeypatch):
-    monkeypatch.delenv("NVIDIA_API_KEY", raising=False)
-    monkeypatch.delenv("NVIDIA_MODEL", raising=False)
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("OPENAI_MODEL", raising=False)
 
 
 def test_missing_key_fallback_is_relevant_unique_and_does_not_mutate_card():
@@ -29,7 +29,7 @@ def test_missing_key_fallback_is_relevant_unique_and_does_not_mutate_card():
 
 @pytest.mark.parametrize("payload", ["not JSON", "[]", '{"questions": null}', '{"questions":[7]}'])
 def test_malformed_model_response_falls_back(monkeypatch, payload):
-    monkeypatch.setenv("NVIDIA_API_KEY", "test-not-a-real-key")
+    monkeypatch.setenv("OPENAI_API_KEY", "test-not-a-real-key")
 
     async def provider(*args):
         return payload
@@ -40,7 +40,7 @@ def test_malformed_model_response_falls_back(monkeypatch, payload):
 
 
 def test_partial_ai_questions_are_validated_deduplicated_and_filled(monkeypatch):
-    monkeypatch.setenv("NVIDIA_API_KEY", "test-not-a-real-key")
+    monkeypatch.setenv("OPENAI_API_KEY", "test-not-a-real-key")
 
     async def provider(*args):
         return json.dumps(
@@ -67,7 +67,7 @@ def test_partial_ai_questions_are_validated_deduplicated_and_filled(monkeypatch)
 
 def test_provider_failure_logs_no_credentials_or_input(monkeypatch, caplog):
     secret = "test-not-a-real-key"
-    monkeypatch.setenv("NVIDIA_API_KEY", secret)
+    monkeypatch.setenv("OPENAI_API_KEY", secret)
 
     async def provider(*args):
         raise httpx.ConnectError(f"{secret} Нужен сервис для магазина")
@@ -105,11 +105,13 @@ def test_provider_makes_one_bounded_server_side_call(monkeypatch):
             )
 
     monkeypatch.setattr(ai.httpx, "AsyncClient", Client)
-    monkeypatch.setenv("NVIDIA_API_KEY", "test-not-a-real-key")
+    monkeypatch.setenv("OPENAI_API_KEY", "test-not-a-real-key")
     run()
     assert len(calls) == 1
     url, request = calls[0]
-    assert url == "https://integrate.api.nvidia.com/v1/chat/completions"
+    assert url == "https://api.openai.com/v1/chat/completions"
     assert request["json"]["stream"] is False
+    assert request["json"]["model"] == "gpt-4o-mini"
+    assert request["json"]["response_format"] == {"type": "json_object"}
     assert len(request["json"]["messages"]) == 2
     assert "test-not-a-real-key" not in json.dumps(request["json"])

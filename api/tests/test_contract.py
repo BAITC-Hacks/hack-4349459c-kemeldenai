@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 
 @pytest.fixture
 def client(tmp_path, monkeypatch):
-    monkeypatch.setenv("NVIDIA_API_KEY", "")
+    monkeypatch.setenv("OPENAI_API_KEY", "")
     with TestClient(
         create_app(database_url=f"sqlite:///{tmp_path}/contract.db", seed=True)
     ) as client:
