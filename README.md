@@ -4,6 +4,8 @@ Runnable five-hour MVP: a business user improves and publishes a task, student t
 
 The [main task and agent handoff](docs/MAIN_TASK.md) records scope, API shapes, scoring, and the demo acceptance test. The API lives in `api/`; the React UI lives in `web/`.
 
+The [next A/B task](docs/NEXT_TASK.md) defines the demo participant entry and confirmed progress-points round. Both agents should branch from the latest `origin/main` before starting it.
+
 ## Development database
 
 Docker Compose starts PostgreSQL. Run the API and Vite on the host using the commands below. Each computer runs its own local database; the Git repository carries code and seed definitions, not database state.
