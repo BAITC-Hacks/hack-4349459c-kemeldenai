@@ -9,6 +9,7 @@ from uuid import UUID, uuid4
 from api.app import ai
 from api.app.applications import router as applications_router
 from api.app.database import Base, make_engine, session_factory, utcnow
+from api.app.database import Milestone as MilestoneRow
 from api.app.database import Proposal as ProposalRow
 from api.app.database import Task as TaskRow
 from api.app.database import Team as TeamRow
@@ -17,6 +18,8 @@ from api.app.models import (
     AnalyzeOutput,
     ErrorResponse,
     HealthResponse,
+    Milestone,
+    MilestoneInput,
     Proposal,
     ProposalDecision,
     ProposalInput,
@@ -32,8 +35,8 @@ from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from sqlalchemy import select, text
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy import select, text, update
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
@@ -50,6 +53,10 @@ def _task_response(row: TaskRow) -> TaskCard:
 
 def _proposal_response(row: ProposalRow) -> Proposal:
     return Proposal.model_validate(row)
+
+
+def _milestone_response(row: MilestoneRow) -> Milestone:
+    return Milestone.model_validate(row)
 
 
 def _team_response(row: TeamRow) -> TeamProfile:
@@ -366,6 +373,63 @@ def create_app(database_url: str | None = None, seed: bool = True) -> FastAPI:
         session.commit()
         session.refresh(row)
         return _proposal_response(row)
+
+    @app.get(
+        "/api/proposals/{proposal_id}/milestones",
+        response_model=list[Milestone],
+        responses={404: {"model": ErrorResponse}, 422: {"model": ErrorResponse}},
+    )
+    def list_milestones(proposal_id: UUID, session: Session = Depends(get_session)):
+        proposal_id = str(proposal_id)
+        if session.get(ProposalRow, proposal_id) is None:
+            raise HTTPException(status_code=404, detail="Предложение не найдено")
+        row = session.scalar(select(MilestoneRow).where(MilestoneRow.proposal_id == proposal_id))
+        return [_milestone_response(row)] if row is not None else []
+
+    @app.post(
+        "/api/proposals/{proposal_id}/milestones",
+        response_model=Milestone,
+        status_code=201,
+        responses={
+            404: {"model": ErrorResponse},
+            409: {"model": ErrorResponse},
+            422: {"model": ErrorResponse},
+        },
+    )
+    def confirm_milestone(
+        proposal_id: UUID, payload: MilestoneInput, session: Session = Depends(get_session)
+    ):
+        proposal_id = str(proposal_id)
+        proposal = session.scalar(
+            select(ProposalRow).where(ProposalRow.id == proposal_id).with_for_update()
+        )
+        if proposal is None:
+            raise HTTPException(status_code=404, detail="Предложение не найдено")
+        if proposal.decision != "selected":
+            raise HTTPException(status_code=409, detail="Сначала выберите команду")
+        if session.scalar(select(MilestoneRow.id).where(MilestoneRow.proposal_id == proposal_id)):
+            raise HTTPException(status_code=409, detail="Этап уже подтверждён")
+        row = MilestoneRow(
+            id=str(uuid4()),
+            proposal_id=proposal_id,
+            description=payload.description,
+            points_awarded=10,
+            confirmed_at=utcnow(),
+        )
+        try:
+            session.add(row)
+            session.flush()
+            session.execute(
+                update(TeamRow)
+                .where(TeamRow.id == proposal.team_id)
+                .values(progress_points=TeamRow.progress_points + 10)
+            )
+            session.commit()
+        except IntegrityError:
+            session.rollback()
+            raise HTTPException(status_code=409, detail="Этап уже подтверждён") from None
+        session.refresh(row)
+        return _milestone_response(row)
 
     return app
 

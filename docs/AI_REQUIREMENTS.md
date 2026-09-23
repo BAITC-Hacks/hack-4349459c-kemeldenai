@@ -46,7 +46,7 @@ Four synthetic inputs were sent to OpenAI with the private local key, and one ad
 4. Only confirmation updates the published score. AI cannot set points, invent business details, publish, or select teams.
 5. If the provider is unavailable, show the deterministic questions promptly and clearly label them as local fallback. Already typed answers remain intact.
 
-Keep the current `questions` response compatible while coordinating any additional `suggestedFields` or per-question provenance with both agents. Prefer an explicit JSON schema for the new response, then continue server-side validation; OpenAI's [Structured Outputs guide](https://developers.openai.com/api/docs/guides/structured-outputs) distinguishes schema adherence from JSON mode. Verify any `evidence` excerpt against the actual submitted text before it reaches the UI. Bound the text sent to the provider and omit contact details and other unnecessary personal data.
+Keep the current `questions` response compatible while coordinating any additional `suggestedFields` or per-question provenance between task owners. Prefer an explicit JSON schema for the new response, then continue server-side validation; OpenAI's [Structured Outputs guide](https://developers.openai.com/api/docs/guides/structured-outputs) distinguishes schema adherence from JSON mode. Verify any `evidence` excerpt against the actual submitted text before it reaches the UI. Bound the text sent to the provider and omit contact details and other unnecessary personal data.
 
 ## Acceptance examples
 
@@ -60,10 +60,10 @@ Keep the current `questions` response compatible while coordinating any addition
 | Prompt injection inside a business description | Treat it as user data; never change the response shape, scoring, or team-selection rules. |
 | Live demo with a configured key | Record provider source and latency without logging the key or full input; show one live AI result and one offline fallback path. |
 
-## Work split after the current A/B integration
+## Task-focused work packages
 
-- **Agent A, backend:** improve missing-information selection; add bounded grounded suggestions and evidence validation; exclude contact text; tune timeout/fallback; add a small quality fixture set and one live-key smoke procedure that does not run in normal tests. Keep response contract changes coordinated with B.
-- **Agent B, frontend:** preserve answers across re-analysis; make transfer idempotent; show accepted/rejected field suggestions and their evidence; distinguish AI, mixed, and local fallback clearly; keep card editing and manual confirmation obvious.
-- **Integrator:** test the weak-to-strong score journey and complete five-minute flow against the real API and PostgreSQL, with the provider key loaded only from local environment. Compare the five fixture inputs before and after the change, then test the fallback without a key.
+- **Question quality and reliability:** one owner improves missing-information selection, limits the result to three to five nonredundant questions, preserves answers during retries, makes transfer idempotent, excludes unnecessary contact data from the provider request, and tests live and fallback behavior. This package includes whichever API and UI changes are needed for the complete journey.
+- **Grounded card suggestions:** one owner adds evidence-backed field suggestions, validates excerpts against the submitted text, provides accept/edit/discard controls, and verifies that no suggestion changes the score until human confirmation. Coordinate the JSON contract before editing shared files.
+- **End-to-end acceptance:** one owner runs the weak-to-strong score journey and complete five-minute flow against the real API and PostgreSQL, compares the quality fixtures, and verifies no-key fallback. The provider key stays only in local environment.
 
 Do not add an AI-generated readiness score, automatic team assignment, chat, embeddings, or a vector database for this round.

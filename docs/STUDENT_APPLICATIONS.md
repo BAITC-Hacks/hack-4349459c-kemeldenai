@@ -9,9 +9,9 @@ Opening an application’s task clears catalog filters and the saved-only view s
 The missing milestone backend is now implemented for the existing business confirmation panel:
 
 - `GET /api/proposals/{id}/milestones` returns zero or one confirmed stage.
-- `POST /api/proposals/{id}/milestones` accepts a nonblank `description`, up to 4,000 characters, and returns a stage with 10 awarded points.
+- `POST /api/proposals/{id}/milestones` accepts a nonblank `description`, 3–2,000 meaningful characters, and returns a stage with 10 awarded points.
 
-A selected proposal is required. A unique constraint on proposal ID plus an atomic team-point increment in the same transaction prevents double awards. PostgreSQL locks the proposal row to coordinate with decision updates. Completed stages and points survive subsequent decision changes. Startup creates the new `milestones` table without changing existing columns. Dates are serialized in UTC consistently across PostgreSQL and SQLite.
+A selected proposal is required. A unique constraint on proposal ID plus an atomic team-point increment in the same transaction prevents double awards. PostgreSQL locks the proposal row to coordinate with decision updates. Completed stages and points survive subsequent decision changes. Startup creates the new `milestones` table without changing existing columns. The application history reuses the shared milestone response schema.
 
 Verification covers team isolation, empty history, invalid IDs, unavailable tasks, retained completed work, restart persistence, and simultaneous duplicate confirmations. Browser verification covers history entry, proposal expansion, and opening the correct task.
 

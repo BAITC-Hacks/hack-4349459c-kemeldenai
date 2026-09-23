@@ -7,7 +7,16 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from dotenv import load_dotenv
-from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String, Text, create_engine
+from sqlalchemy import (
+    JSON,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    create_engine,
+)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 
 
@@ -96,9 +105,13 @@ class Proposal(Base):
 
 class Milestone(Base):
     __tablename__ = "milestones"
+    __table_args__ = (UniqueConstraint("proposal_id", name="uq_milestones_proposal_id"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
-    proposal_id: Mapped[str] = mapped_column(ForeignKey("proposals.id"), unique=True)
+    proposal_id: Mapped[str] = mapped_column(
+        ForeignKey("proposals.id", ondelete="CASCADE"), index=True
+    )
+
     description: Mapped[str] = mapped_column(Text)
     points_awarded: Mapped[int] = mapped_column(Integer, default=10)
     confirmed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)

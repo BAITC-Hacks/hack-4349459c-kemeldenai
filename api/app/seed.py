@@ -221,7 +221,11 @@ def seed_database(engine, factory) -> None:
         session.flush()
         for i in range(5):
             key = f"demo-proposal-{i + 1}"
-            if session.scalar(select(Proposal.id).where(Proposal.seed_key == key)):
+            existing = session.scalar(select(Proposal).where(Proposal.seed_key == key))
+            example_url = f"https://example.org/prototypes/demo-{i + 1}"
+            if existing:
+                if not existing.prototype_url:
+                    existing.prototype_url = example_url
                 continue
             session.add(
                 Proposal(
@@ -232,7 +236,7 @@ def seed_database(engine, factory) -> None:
                     idea=f"Подготовить прототип для задачи «{published_cards[i]['title']}».",
                     plan="Поговорить с пользователями, спроектировать решение и проверить небольшой прототип.",
                     timeline="Три недели",
-                    prototype_url="",
+                    prototype_url=example_url,
                     decision="pending",
                 )
             )

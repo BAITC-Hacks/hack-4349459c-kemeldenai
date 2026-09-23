@@ -5,7 +5,9 @@ Writes OpenAPI and endpoint examples without touching the application's tables.
 """
 
 import json
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from threading import Barrier
 from uuid import uuid4
 
 from api.app.database import make_engine
@@ -97,6 +99,7 @@ def main():
             call("POST", path + "/publish")
             call("PUT", path, weak, expected=409)
             assert call("GET", path)["score"] == 100
+            selected_proposals = []
             for i in range(2):
                 proposal = call(
                     "POST",
@@ -111,7 +114,34 @@ def main():
                     201,
                 )
                 call("PATCH", f"/api/proposals/{proposal['id']}", {"decision": "selected"})
+                selected_proposals.append(proposal)
             assert len(call("GET", path + "/proposals")) == 2
+            first_path = f"/api/proposals/{selected_proposals[0]['id']}/milestones"
+            assert call("GET", first_path) == []
+            first_stage = call(
+                "POST", first_path, {"description": "Прототип проверен с заказчиком"}, 201
+            )
+            assert first_stage["pointsAwarded"] == 10
+            assert call("GET", first_path) == [first_stage]
+            call("POST", first_path, {"description": "Повтор"}, 409)
+            assert next(t for t in call("GET", "/api/teams") if t["id"] == teams[0]["id"])[
+                "progressPoints"
+            ] == 10
+
+            second_path = f"/api/proposals/{selected_proposals[1]['id']}/milestones"
+            barrier = Barrier(2)
+
+            def confirm_at_once(_):
+                barrier.wait()
+                return client.post(second_path, json={"description": "Этап завершён"})
+
+            with ThreadPoolExecutor(max_workers=2) as pool:
+                concurrent = list(pool.map(confirm_at_once, range(2)))
+            assert sorted(result.status_code for result in concurrent) == [201, 409]
+            assert len(call("GET", second_path)) == 1
+            assert next(t for t in call("GET", "/api/teams") if t["id"] == teams[1]["id"])[
+                "progressPoints"
+            ] == 10
             low = cards[-1]
             assert low["score"] < 40
             proposal = call(
@@ -122,11 +152,17 @@ def main():
                     "idea": "Уточнить процесс",
                     "plan": "Провести интервью",
                     "timeline": "Неделя",
-                    "prototypeUrl": "",
+                    "prototypeUrl": "https://example.org/low-score-demo",
                 },
                 201,
             )
             call("PATCH", f"/api/proposals/{proposal['id']}", {"decision": "rejected"})
+            call(
+                "POST",
+                f"/api/proposals/{proposal['id']}/milestones",
+                {"description": "Нельзя начислять отклонённой команде"},
+                409,
+            )
             output = Path(__file__).parent
             (output / "openapi.json").write_text(
                 json.dumps(client.get("/openapi.json").json(), ensure_ascii=False, indent=2) + "\n"
@@ -141,6 +177,10 @@ def main():
             assert len(client.get("/api/tasks").json()) == 6
             assert len(client.get("/api/teams").json()) == 5
             assert client.get(path).json()["score"] == 100
+            assert client.get(first_path).json() == [first_stage]
+            assert len(client.get(second_path).json()) == 1
+            team_totals = {team["id"]: team["progressPoints"] for team in client.get("/api/teams").json()}
+            assert team_totals[teams[0]["id"]] == team_totals[teams[1]["id"]] == 10
         print(
             f"PostgreSQL API flow passed: {len(examples)} requests, restart persistence, seed idempotence. Exported api/openapi.json and api/examples.json."
         )
