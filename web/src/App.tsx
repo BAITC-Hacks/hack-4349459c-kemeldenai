@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react'
 import { api } from './api'
+import { DemoEntry } from './DemoEntry'
+import { clearDemoPersona, readDemoPersona, saveDemoPersona, type DemoPersona } from './demoSession'
+import { MilestonePanel } from './MilestonePanel'
 import {
   CARD_FIELDS,
   EMPTY_CARD,
@@ -7,6 +10,7 @@ import {
   type CardField,
   type ClarifyingQuestion,
   type EditableCard,
+  type Milestone,
   type Proposal,
   type ProposalInput,
   type TaskCard,
@@ -15,6 +19,7 @@ import {
 
 type Workspace = 'business' | 'student'
 type BusinessPage = 'builder' | 'responses'
+type ProposalDraft = Omit<ProposalInput, 'teamId'>
 
 const fieldLabels: Record<CardField, string> = {
   title: 'Название задачи',
@@ -70,8 +75,8 @@ const decisionLabels = {
   rejected: 'Отклонена',
 } as const
 
-const EMPTY_PROPOSAL: ProposalInput = {
-  teamId: '', idea: '', plan: '', timeline: '', prototypeUrl: '',
+const EMPTY_PROPOSAL: ProposalDraft = {
+  idea: '', plan: '', timeline: '', prototypeUrl: '',
 }
 
 function errorMessage(error: unknown) {
@@ -118,7 +123,7 @@ function Field({ label, value, onChange, hint, rows = 3, required = false }: {
   return (
     <label className="field">
       <span className="field__label">{label}{required && <span className="field__required"> *</span>}</span>
-      <textarea rows={rows} value={value} onChange={(event) => onChange(event.target.value)} placeholder={hint} />
+      <textarea rows={rows} required={required} value={value} onChange={(event) => onChange(event.target.value)} placeholder={hint} />
     </label>
   )
 }
@@ -134,13 +139,13 @@ function TextInput({ label, value, onChange, placeholder, type = 'text', require
   return (
     <label className="field">
       <span className="field__label">{label}{required && <span className="field__required"> *</span>}</span>
-      <input type={type} value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} />
+      <input type={type} required={required} value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} />
     </label>
   )
 }
 
 function App() {
-  const [workspace, setWorkspace] = useState<Workspace>('business')
+  const [persona, setPersona] = useState<DemoPersona | null>(readDemoPersona)
   const [businessPage, setBusinessPage] = useState<BusinessPage>('builder')
   const [card, setCard] = useState<EditableCard>({ ...EMPTY_CARD })
   const [task, setTask] = useState<TaskCard | null>(null)
@@ -153,12 +158,14 @@ function App() {
 
   const [tasks, setTasks] = useState<TaskCard[]>([])
   const [teams, setTeams] = useState<Team[]>([])
+  const [teamsLoading, setTeamsLoading] = useState(true)
+  const [teamsError, setTeamsError] = useState('')
   const [catalogLoading, setCatalogLoading] = useState(true)
   const [catalogError, setCatalogError] = useState('')
   const [topicFilter, setTopicFilter] = useState('')
   const [readinessFilter, setReadinessFilter] = useState('')
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
-  const [proposalForm, setProposalForm] = useState<ProposalInput>({ ...EMPTY_PROPOSAL })
+  const [proposalForm, setProposalForm] = useState<ProposalDraft>({ ...EMPTY_PROPOSAL })
   const [proposalBusy, setProposalBusy] = useState(false)
   const [proposalError, setProposalError] = useState('')
 
@@ -168,6 +175,8 @@ function App() {
   const [proposalsError, setProposalsError] = useState('')
   const [decidingId, setDecidingId] = useState('')
 
+  const activeTeam = persona?.role === 'student' ? teams.find((team) => team.id === persona.teamId) : undefined
+  const workspace: Workspace | null = persona?.role === 'business' ? 'business' : activeTeam ? 'student' : null
   const dirty = task !== null && CARD_FIELDS.some((field) => card[field] !== task[field])
   const businessTasks = tasks
   const topics = Array.from(new Set(tasks.map((item) => item.topic).filter(Boolean))).sort((a, b) => a.localeCompare(b, 'ru'))
@@ -200,9 +209,29 @@ function App() {
     }
   }
 
+  async function refreshTeams() {
+    setTeamsLoading(true)
+    setTeamsError('')
+    try {
+      const next = await api.teams()
+      setTeams(next)
+      setPersona((current) => {
+        if (current?.role === 'student' && !next.some((team) => team.id === current.teamId)) {
+          clearDemoPersona()
+          return null
+        }
+        return current
+      })
+    } catch (error) {
+      setTeamsError(errorMessage(error))
+    } finally {
+      setTeamsLoading(false)
+    }
+  }
+
   useEffect(() => {
     void refreshCatalog()
-    void api.teams().then(setTeams).catch((error) => setCatalogError(errorMessage(error)))
+    void refreshTeams()
     const savedId = localStorage.getItem('hackalem.currentTaskId')
     if (savedId) {
       void api.task(savedId).then((saved) => {
@@ -348,18 +377,57 @@ function App() {
     setBusinessPage('builder')
   }
 
-  async function submitProposal(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    if (!selectedTask) return
+  function enterBusiness() {
+    const next: DemoPersona = { version: 1, role: 'business' }
+    saveDemoPersona(next)
+    setPersona(next)
+    setBusinessPage(task?.status === 'published' ? 'responses' : 'builder')
+    if (task?.status === 'published') void refreshCatalog()
+  }
+
+  function enterStudent(teamId: string) {
+    if (!teams.some((team) => team.id === teamId)) return
+    const next: DemoPersona = { version: 1, role: 'student', teamId }
+    saveDemoPersona(next)
+    setPersona(next)
+    setProposalForm({ ...EMPTY_PROPOSAL })
+    setProposalError('')
+    void refreshCatalog()
+    void refreshTeams()
+  }
+
+  function changeParticipant() {
+    clearDemoPersona()
+    setPersona(null)
+    setProposalForm({ ...EMPTY_PROPOSAL })
     setProposalError('')
     setNotice('')
-    if (!proposalForm.teamId || !proposalForm.idea.trim() || !proposalForm.plan.trim() || !proposalForm.timeline.trim()) {
-      setProposalError('Заполните команду, идею, план и срок.')
+  }
+
+  function milestoneConfirmed(milestone: Milestone) {
+    setNotice(`Этап подтверждён. Команде начислено ${milestone.pointsAwarded} баллов.`)
+    void refreshTeams()
+  }
+
+  async function submitProposal(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!selectedTask || !activeTeam) return
+    setProposalError('')
+    setNotice('')
+    if (!proposalForm.idea.trim() || !proposalForm.plan.trim() || !proposalForm.timeline.trim() || !proposalForm.prototypeUrl.trim()) {
+      setProposalError('Заполните идею, план, срок и ссылку на прототип.')
+      return
+    }
+    try {
+      const url = new URL(proposalForm.prototypeUrl.trim())
+      if (url.protocol !== 'http:' && url.protocol !== 'https:') throw new Error()
+    } catch {
+      setProposalError('Укажите ссылку на прототип с адресом http:// или https://.')
       return
     }
     setProposalBusy(true)
     try {
-      await api.submitProposal(selectedTask.id, proposalForm)
+      await api.submitProposal(selectedTask.id, { ...proposalForm, teamId: activeTeam.id, prototypeUrl: proposalForm.prototypeUrl.trim() })
       setProposalForm({ ...EMPTY_PROPOSAL })
       setNotice('Предложение отправлено. Решение остаётся за представителем бизнеса.')
       if (businessTaskId === selectedTask.id) setProposals(await api.proposals(selectedTask.id))
@@ -384,6 +452,10 @@ function App() {
     }
   }
 
+  if (!workspace) {
+    return <DemoEntry teams={teams} teamsLoading={teamsLoading} teamsError={teamsError} onRetryTeams={() => void refreshTeams()} onBusiness={enterBusiness} onStudent={enterStudent} />
+  }
+
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -391,10 +463,7 @@ function App() {
           <span className="brand__mark">S<span>.</span></span>
           <span className="brand__name">AI Sana <small>Практические задачи</small></span>
         </div>
-        <nav className="role-switch" aria-label="Режим работы">
-          <button type="button" className={workspace === 'business' ? 'is-active' : ''} aria-current={workspace === 'business' ? 'page' : undefined} onClick={() => setWorkspace('business')}>Для бизнеса</button>
-          <button type="button" className={workspace === 'student' ? 'is-active' : ''} aria-current={workspace === 'student' ? 'page' : undefined} onClick={() => { setWorkspace('student'); void refreshCatalog() }}>Для студентов</button>
-        </nav>
+        <div className="persona-header"><span><small>{workspace === 'business' ? 'БИЗНЕС' : 'КОМАНДА'}</small><strong>{workspace === 'business' ? 'Демо-компания' : activeTeam?.name}</strong>{workspace === 'student' && <em>{activeTeam?.progressPoints ?? 0} баллов</em>}</span><button className="button button--outline" type="button" onClick={changeParticipant}>Сменить участника</button></div>
         <span className="topbar__caption">Открытый выбор команд</span>
       </header>
 
@@ -411,6 +480,7 @@ function App() {
         </div>
 
         {notice && <div className="notice" role="status"><span>{notice}</span><button type="button" aria-label="Закрыть уведомление" onClick={() => setNotice('')}>×</button></div>}
+        {workspace === 'student' && activeTeam && <div className="team-banner"><div><span>Вы вошли как команда</span><strong>{activeTeam.name}</strong><small>{activeTeam.skills.join(' · ')}</small></div><div className="team-banner__points"><strong>{activeTeam.progressPoints}</strong><span>баллов прогресса</span></div></div>}
 
         {workspace === 'business' ? (
           <>
@@ -484,7 +554,14 @@ function App() {
                 {proposalsLoading && <p className="state-message">Загружаем отклики…</p>}
                 {proposalsError && <p className="error-message" role="alert">{proposalsError}</p>}
                 {!proposalsLoading && businessTaskId && !proposals.length && !proposalsError && <p className="state-message">На эту задачу ещё нет предложений.</p>}
-                <div className="proposal-list">{proposals.map((item) => <article className="proposal-card" key={item.id}><div className="proposal-card__head"><div><p className="eyebrow">ПРЕДЛОЖЕНИЕ КОМАНДЫ</p><h3>{teams.find((team) => team.id === item.teamId)?.name ?? 'Команда'}</h3></div><span className={`decision decision--${item.decision}`}>{decisionLabels[item.decision]}</span></div><div className="proposal-card__content"><div><span>Идея решения</span><p>{item.idea}</p></div><div><span>План работы</span><p>{item.plan}</p></div><div><span>Срок</span><p>{item.timeline}</p></div><div><span>Прототип</span><p><PrototypeLink url={item.prototypeUrl} /></p></div></div><div className="proposal-card__actions"><button className="button button--accent" type="button" disabled={decidingId === item.id || item.decision === 'selected'} onClick={() => void decide(item, 'selected')}>Выбрать команду</button><button className="button button--outline" type="button" disabled={decidingId === item.id || item.decision === 'rejected'} onClick={() => void decide(item, 'rejected')}>Отклонить</button></div></article>)}</div>
+                <div className="proposal-list">{proposals.map((item) => (
+                  <article className="proposal-card" key={item.id}>
+                    <div className="proposal-card__head"><div><p className="eyebrow">ПРЕДЛОЖЕНИЕ КОМАНДЫ</p><h3>{teams.find((team) => team.id === item.teamId)?.name ?? 'Команда'}</h3></div><span className={`decision decision--${item.decision}`}>{decisionLabels[item.decision]}</span></div>
+                    <div className="proposal-card__content"><div><span>Идея решения</span><p>{item.idea}</p></div><div><span>План работы</span><p>{item.plan}</p></div><div><span>Срок</span><p>{item.timeline}</p></div><div><span>Прототип</span><p><PrototypeLink url={item.prototypeUrl} /></p></div></div>
+                    <div className="proposal-card__actions"><button className="button button--accent" type="button" disabled={decidingId === item.id || item.decision === 'selected'} onClick={() => void decide(item, 'selected')}>Выбрать команду</button><button className="button button--outline" type="button" disabled={decidingId === item.id || item.decision === 'rejected'} onClick={() => void decide(item, 'rejected')}>Отклонить</button></div>
+                    {item.decision === 'selected' && <MilestonePanel proposalId={item.id} onConfirmed={milestoneConfirmed} />}
+                  </article>
+                ))}</div>
               </section>
             )}
           </>
@@ -497,7 +574,7 @@ function App() {
             {!catalogLoading && !visibleTasks.length && !catalogError && <p className="state-message">Задач с такими параметрами пока нет. Попробуйте изменить фильтры.</p>}
             <div className="catalog__columns">
               <div className="task-list">{visibleTasks.map((item) => <button type="button" key={item.id} className={`task-tile ${selectedTask?.id === item.id ? 'is-selected' : ''}`} onClick={() => { setSelectedTaskId(item.id); setProposalError('') }} aria-pressed={selectedTask?.id === item.id}><div className="task-tile__meta"><span>{item.industry || 'Отрасль не указана'}</span><span>{item.topic || 'Без темы'}</span></div><h3>{item.title || 'Задача без названия'}</h3><p>{item.need || item.description || 'Описание появится после уточнения.'}</p><div className="task-tile__foot"><span className={`readiness readiness--${item.readiness}`}>{readinessLabels[item.readiness]}</span><strong>{item.score}<small>/100</small></strong></div></button>)}</div>
-              {selectedTask && <article className="task-detail"><div className="task-detail__head"><span className="eyebrow">КАРТОЧКА ЗАДАЧИ</span><ScoreRing score={selectedTask.score ?? 0} compact /></div><h2>{selectedTask.title || 'Задача без названия'}</h2><p className="task-detail__meta">{selectedTask.industry || 'Отрасль не указана'} · {selectedTask.topic || 'Без темы'}</p><p className="task-detail__summary">{selectedTask.description}</p><div className="task-detail__facts">{(['context', 'need', 'users', 'dataMaterials', 'constraints', 'expectedResult', 'successCriteria', 'contact', 'interaction'] as CardField[]).map((field) => <div key={field}><span>{fieldLabels[field]}</span><p>{selectedTask[field]?.trim() || 'Пока не указано'}</p></div>)}</div><div className="task-detail__bottom"><span className={`readiness readiness--${selectedTask.readiness}`}>{readinessLabels[selectedTask.readiness]}</span><p>Даже при низком рейтинге команда может отправить предложение.</p></div><form className="proposal-form" onSubmit={(event) => void submitProposal(event)}><div className="section-heading"><span className="section-heading__number">↗</span><div><h3>Предложить решение</h3><p>Опишите подход. Выбор команды останется за бизнесом.</p></div></div><label className="field"><span className="field__label">Ваша команда *</span><select value={proposalForm.teamId} required onChange={(event) => setProposalForm((current) => ({ ...current, teamId: event.target.value }))}><option value="">Выберите команду</option>{teams.map((team) => <option value={team.id} key={team.id}>{team.name}</option>)}</select></label><Field label="Идея решения" required value={proposalForm.idea} onChange={(value) => setProposalForm((current) => ({ ...current, idea: value }))} hint="Как вы предлагаете решить задачу?" /><Field label="План работы" required value={proposalForm.plan} onChange={(value) => setProposalForm((current) => ({ ...current, plan: value }))} hint="Основные этапы работы" /><div className="two-columns"><TextInput label="Срок" required value={proposalForm.timeline} onChange={(value) => setProposalForm((current) => ({ ...current, timeline: value }))} placeholder="Например, 2 недели" /><TextInput label="Ссылка на прототип" type="url" value={proposalForm.prototypeUrl} onChange={(value) => setProposalForm((current) => ({ ...current, prototypeUrl: value }))} placeholder="https://…" /></div>{proposalError && <p className="error-message" role="alert">{proposalError}</p>}<button className="button button--accent" disabled={proposalBusy} type="submit">{proposalBusy ? 'Отправляем…' : 'Отправить предложение'} <ArrowIcon /></button></form></article>}
+              {selectedTask && <article className="task-detail"><div className="task-detail__head"><span className="eyebrow">КАРТОЧКА ЗАДАЧИ</span><ScoreRing score={selectedTask.score ?? 0} compact /></div><h2>{selectedTask.title || 'Задача без названия'}</h2><p className="task-detail__meta">{selectedTask.industry || 'Отрасль не указана'} · {selectedTask.topic || 'Без темы'}</p><p className="task-detail__summary">{selectedTask.description}</p><div className="task-detail__facts">{(['context', 'need', 'users', 'dataMaterials', 'constraints', 'expectedResult', 'successCriteria', 'contact', 'interaction'] as CardField[]).map((field) => <div key={field}><span>{fieldLabels[field]}</span><p>{selectedTask[field]?.trim() || 'Пока не указано'}</p></div>)}</div><div className="task-detail__bottom"><span className={`readiness readiness--${selectedTask.readiness}`}>{readinessLabels[selectedTask.readiness]}</span><p>Даже при низком рейтинге команда может отправить предложение.</p></div><form className="proposal-form" onSubmit={(event) => void submitProposal(event)}><div className="section-heading"><span className="section-heading__number">↗</span><div><h3>Предложить решение</h3><p>Опишите подход. Выбор команды останется за бизнесом.</p></div></div><p className="proposal-form__team">Предложение отправляет команда <strong>{activeTeam?.name}</strong></p><Field label="Идея решения" required value={proposalForm.idea} onChange={(value) => setProposalForm((current) => ({ ...current, idea: value }))} hint="Как вы предлагаете решить задачу?" /><Field label="План работы" required value={proposalForm.plan} onChange={(value) => setProposalForm((current) => ({ ...current, plan: value }))} hint="Основные этапы работы" /><div className="two-columns"><TextInput label="Срок" required value={proposalForm.timeline} onChange={(value) => setProposalForm((current) => ({ ...current, timeline: value }))} placeholder="Например, 2 недели" /><TextInput label="Ссылка на прототип" required type="url" value={proposalForm.prototypeUrl} onChange={(value) => setProposalForm((current) => ({ ...current, prototypeUrl: value }))} placeholder="https://…" /></div>{proposalError && <p className="error-message" role="alert">{proposalError}</p>}<button className="button button--accent" disabled={proposalBusy} type="submit">{proposalBusy ? 'Отправляем…' : 'Отправить предложение'} <ArrowIcon /></button></form></article>}
             </div>
           </section>
         )}
