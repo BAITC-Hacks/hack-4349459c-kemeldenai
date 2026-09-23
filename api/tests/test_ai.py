@@ -3,7 +3,6 @@ import json
 
 import httpx
 import pytest
-
 from api.app import ai
 
 
@@ -31,8 +30,10 @@ def test_missing_key_fallback_is_relevant_unique_and_does_not_mutate_card():
 @pytest.mark.parametrize("payload", ["not JSON", "[]", '{"questions": null}', '{"questions":[7]}'])
 def test_malformed_model_response_falls_back(monkeypatch, payload):
     monkeypatch.setenv("NVIDIA_API_KEY", "test-not-a-real-key")
+
     async def provider(*args):
         return payload
+
     monkeypatch.setattr(ai, "_request_model", provider)
     assert run()["source"] == "fallback"
     assert len(run()["questions"]) >= 3
@@ -40,15 +41,21 @@ def test_malformed_model_response_falls_back(monkeypatch, payload):
 
 def test_partial_ai_questions_are_validated_deduplicated_and_filled(monkeypatch):
     monkeypatch.setenv("NVIDIA_API_KEY", "test-not-a-real-key")
+
     async def provider(*args):
-        return json.dumps({"questions": [
-            {"field": "need", "question": " Какую проблему решаем? "},
-            {"field": "need", "question": "Какую проблему решаем?"},
-            {"field": "users", "question": "Какую проблему решаем?"},
-            {"field": "madeUp", "question": "Какой секрет?"},
-            {"field": "context", "question": "Уже заполнено?"},
-            {"field": "constraints", "question": " "},
-        ]})
+        return json.dumps(
+            {
+                "questions": [
+                    {"field": "need", "question": " Какую проблему решаем? "},
+                    {"field": "need", "question": "Какую проблему решаем?"},
+                    {"field": "users", "question": "Какую проблему решаем?"},
+                    {"field": "madeUp", "question": "Какой секрет?"},
+                    {"field": "context", "question": "Уже заполнено?"},
+                    {"field": "constraints", "question": " "},
+                ]
+            }
+        )
+
     monkeypatch.setattr(ai, "_request_model", provider)
     result = run({"context": "100 обращений в день"})
     assert result["source"] == "ai"
@@ -61,8 +68,10 @@ def test_partial_ai_questions_are_validated_deduplicated_and_filled(monkeypatch)
 def test_provider_failure_logs_no_credentials_or_input(monkeypatch, caplog):
     secret = "test-not-a-real-key"
     monkeypatch.setenv("NVIDIA_API_KEY", secret)
+
     async def provider(*args):
         raise httpx.ConnectError(f"{secret} Нужен сервис для магазина")
+
     monkeypatch.setattr(ai, "_request_model", provider)
     assert run()["source"] == "fallback"
     assert secret not in caplog.text
@@ -76,16 +85,25 @@ def test_complete_card_still_gets_three_refinement_questions():
 
 def test_provider_makes_one_bounded_server_side_call(monkeypatch):
     calls = []
+
     class Client:
         def __init__(self, **kwargs):
             assert kwargs["timeout"] <= 20
+
         async def __aenter__(self):
             return self
+
         async def __aexit__(self, *args):
             pass
+
         async def post(self, url, **kwargs):
             calls.append((url, kwargs))
-            return httpx.Response(200, json={"choices": [{"message": {"content": '{"questions": []}'}}]}, request=httpx.Request("POST", url))
+            return httpx.Response(
+                200,
+                json={"choices": [{"message": {"content": '{"questions": []}'}}]},
+                request=httpx.Request("POST", url),
+            )
+
     monkeypatch.setattr(ai.httpx, "AsyncClient", Client)
     monkeypatch.setenv("NVIDIA_API_KEY", "test-not-a-real-key")
     run()

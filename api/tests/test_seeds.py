@@ -2,12 +2,10 @@
 
 import re
 
-from sqlalchemy import select
-
 from api.app.database import Base, Proposal, Task, Team, make_engine, session_factory
 from api.app.scoring import score_card
 from api.app.seed import seed_database
-
+from sqlalchemy import select
 
 CYRILLIC = re.compile(r"[А-Яа-яЁё]")
 
@@ -43,7 +41,10 @@ def test_seeded_cards_have_computed_scores_and_demo_readiness_range(tmp_path):
             }
             expected = score_card(card)
             assert (task.score, task.readiness, task.breakdown, task.missing) == (
-                expected["score"], expected["readiness"], expected["breakdown"], expected["missing"]
+                expected["score"],
+                expected["readiness"],
+                expected["breakdown"],
+                expected["missing"],
             )
             assert task.confirmed_at is not None
         assert any(task.score < 40 for task in published)

@@ -1,0 +1,1688 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "HackAlem MVP API",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/health": {
+      "get": {
+        "summary": "Health",
+        "operationId": "health_api_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/analyze": {
+      "post": {
+        "summary": "Analyze",
+        "operationId": "analyze_api_analyze_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalyzeInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalyzeOutput"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tasks": {
+      "get": {
+        "summary": "List Tasks",
+        "operationId": "list_tasks_api_tasks_get",
+        "parameters": [
+          {
+            "name": "topic",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 120
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Topic"
+            }
+          },
+          {
+            "name": "readiness",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^(draft|workable|ready|priority)$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Readiness"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TaskCard"
+                  },
+                  "title": "Response List Tasks Api Tasks Get"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create Task",
+        "operationId": "create_task_api_tasks_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaskInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskCard"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    },
+    "/api/tasks/{task_id}": {
+      "get": {
+        "summary": "Get Task",
+        "operationId": "get_task_api_tasks__task_id__get",
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Task Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskCard"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update Draft",
+        "operationId": "update_draft_api_tasks__task_id__put",
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Task Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaskInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskCard"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    },
+    "/api/tasks/{task_id}/confirm": {
+      "post": {
+        "summary": "Confirm Task",
+        "operationId": "confirm_task_api_tasks__task_id__confirm_post",
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Task Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaskInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskCard"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    },
+    "/api/tasks/{task_id}/publish": {
+      "post": {
+        "summary": "Publish Task",
+        "operationId": "publish_task_api_tasks__task_id__publish_post",
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Task Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskCard"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    },
+    "/api/teams": {
+      "get": {
+        "summary": "List Teams",
+        "operationId": "list_teams_api_teams_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TeamProfile"
+                  },
+                  "type": "array",
+                  "title": "Response List Teams Api Teams Get"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tasks/{task_id}/proposals": {
+      "get": {
+        "summary": "List Proposals",
+        "operationId": "list_proposals_api_tasks__task_id__proposals_get",
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Task Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Proposal"
+                  },
+                  "title": "Response List Proposals Api Tasks  Task Id  Proposals Get"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create Proposal",
+        "operationId": "create_proposal_api_tasks__task_id__proposals_post",
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Task Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProposalInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Proposal"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    },
+    "/api/proposals/{proposal_id}": {
+      "patch": {
+        "summary": "Decide Proposal",
+        "operationId": "decide_proposal_api_proposals__proposal_id__patch",
+        "parameters": [
+          {
+            "name": "proposal_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Proposal Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProposalDecision"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Proposal"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AnalyzeInput": {
+        "properties": {
+          "description": {
+            "type": "string",
+            "maxLength": 12000,
+            "minLength": 1,
+            "title": "Description"
+          },
+          "industry": {
+            "type": "string",
+            "maxLength": 120,
+            "title": "Industry",
+            "default": ""
+          },
+          "card": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Card"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "description"
+        ],
+        "title": "AnalyzeInput"
+      },
+      "AnalyzeOutput": {
+        "properties": {
+          "questions": {
+            "items": {
+              "$ref": "#/components/schemas/Question"
+            },
+            "type": "array",
+            "title": "Questions"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "ai",
+              "fallback"
+            ],
+            "title": "Source"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "questions",
+          "source"
+        ],
+        "title": "AnalyzeOutput"
+      },
+      "BreakdownItem": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "earned": {
+            "type": "integer",
+            "title": "Earned"
+          },
+          "maximum": {
+            "type": "integer",
+            "title": "Maximum"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "earned",
+          "maximum"
+        ],
+        "title": "BreakdownItem"
+      },
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "title": "ErrorResponse"
+      },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "ok",
+            "title": "Status"
+          },
+          "database": {
+            "type": "string",
+            "const": "ok",
+            "title": "Database"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "database"
+        ],
+        "title": "HealthResponse"
+      },
+      "Proposal": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "taskId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Taskid"
+          },
+          "teamId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Teamid"
+          },
+          "idea": {
+            "type": "string",
+            "title": "Idea"
+          },
+          "plan": {
+            "type": "string",
+            "title": "Plan"
+          },
+          "timeline": {
+            "type": "string",
+            "title": "Timeline"
+          },
+          "prototypeUrl": {
+            "type": "string",
+            "title": "Prototypeurl"
+          },
+          "decision": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "selected",
+              "rejected"
+            ],
+            "title": "Decision"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Createdat"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "taskId",
+          "teamId",
+          "idea",
+          "plan",
+          "timeline",
+          "prototypeUrl",
+          "decision",
+          "createdAt"
+        ],
+        "title": "Proposal"
+      },
+      "ProposalDecision": {
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": [
+              "selected",
+              "rejected"
+            ],
+            "title": "Decision"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "decision"
+        ],
+        "title": "ProposalDecision"
+      },
+      "ProposalInput": {
+        "properties": {
+          "teamId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Teamid"
+          },
+          "idea": {
+            "type": "string",
+            "maxLength": 12000,
+            "minLength": 1,
+            "title": "Idea"
+          },
+          "plan": {
+            "type": "string",
+            "maxLength": 12000,
+            "minLength": 1,
+            "title": "Plan"
+          },
+          "timeline": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Timeline"
+          },
+          "prototypeUrl": {
+            "type": "string",
+            "maxLength": 2048,
+            "title": "Prototypeurl",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "teamId",
+          "idea",
+          "plan",
+          "timeline"
+        ],
+        "title": "ProposalInput"
+      },
+      "Question": {
+        "properties": {
+          "field": {
+            "type": "string",
+            "title": "Field"
+          },
+          "question": {
+            "type": "string",
+            "title": "Question"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "field",
+          "question"
+        ],
+        "title": "Question"
+      },
+      "TaskCard": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "industry": {
+            "type": "string",
+            "title": "Industry"
+          },
+          "topic": {
+            "type": "string",
+            "title": "Topic"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "context": {
+            "type": "string",
+            "title": "Context"
+          },
+          "need": {
+            "type": "string",
+            "title": "Need"
+          },
+          "users": {
+            "type": "string",
+            "title": "Users"
+          },
+          "dataMaterials": {
+            "type": "string",
+            "title": "Datamaterials"
+          },
+          "constraints": {
+            "type": "string",
+            "title": "Constraints"
+          },
+          "expectedResult": {
+            "type": "string",
+            "title": "Expectedresult"
+          },
+          "successCriteria": {
+            "type": "string",
+            "title": "Successcriteria"
+          },
+          "contact": {
+            "type": "string",
+            "title": "Contact"
+          },
+          "interaction": {
+            "type": "string",
+            "title": "Interaction"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "published"
+            ],
+            "title": "Status"
+          },
+          "confirmedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confirmedat"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "readiness": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "workable",
+              "ready",
+              "priority"
+            ],
+            "title": "Readiness"
+          },
+          "breakdown": {
+            "items": {
+              "$ref": "#/components/schemas/BreakdownItem"
+            },
+            "type": "array",
+            "title": "Breakdown"
+          },
+          "missing": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Missing"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Createdat"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updatedat"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "industry",
+          "topic",
+          "description",
+          "context",
+          "need",
+          "users",
+          "dataMaterials",
+          "constraints",
+          "expectedResult",
+          "successCriteria",
+          "contact",
+          "interaction",
+          "status",
+          "confirmedAt",
+          "score",
+          "readiness",
+          "breakdown",
+          "missing",
+          "createdAt",
+          "updatedAt"
+        ],
+        "title": "TaskCard"
+      },
+      "TaskInput": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "title": "Title",
+            "default": ""
+          },
+          "industry": {
+            "type": "string",
+            "maxLength": 120,
+            "title": "Industry",
+            "default": ""
+          },
+          "topic": {
+            "type": "string",
+            "maxLength": 120,
+            "title": "Topic",
+            "default": ""
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 12000,
+            "title": "Description",
+            "default": ""
+          },
+          "context": {
+            "type": "string",
+            "maxLength": 12000,
+            "title": "Context",
+            "default": ""
+          },
+          "need": {
+            "type": "string",
+            "maxLength": 12000,
+            "title": "Need",
+            "default": ""
+          },
+          "users": {
+            "type": "string",
+            "maxLength": 12000,
+            "title": "Users",
+            "default": ""
+          },
+          "dataMaterials": {
+            "type": "string",
+            "maxLength": 12000,
+            "title": "Datamaterials",
+            "default": ""
+          },
+          "constraints": {
+            "type": "string",
+            "maxLength": 12000,
+            "title": "Constraints",
+            "default": ""
+          },
+          "expectedResult": {
+            "type": "string",
+            "maxLength": 12000,
+            "title": "Expectedresult",
+            "default": ""
+          },
+          "successCriteria": {
+            "type": "string",
+            "maxLength": 12000,
+            "title": "Successcriteria",
+            "default": ""
+          },
+          "contact": {
+            "type": "string",
+            "maxLength": 4000,
+            "title": "Contact",
+            "default": ""
+          },
+          "interaction": {
+            "type": "string",
+            "maxLength": 4000,
+            "title": "Interaction",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "TaskInput"
+      },
+      "TeamProfile": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "interests": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Interests"
+          },
+          "skills": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Skills"
+          },
+          "technologies": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Technologies"
+          },
+          "progressPoints": {
+            "type": "integer",
+            "title": "Progresspoints"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "interests",
+          "skills",
+          "technologies",
+          "progressPoints"
+        ],
+        "title": "TeamProfile"
+      }
+    }
+  }
+}
