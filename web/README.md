@@ -26,3 +26,34 @@ The frontend calls only endpoints in [the shared contract](../docs/MAIN_TASK.md)
 The role switch is for the hackathon demo; it is not authentication. A published task remains visible and accepts proposals even at a low readiness score.
 
 Review screenshots with synthetic data: [desktop catalog](screenshots/student-catalog-desktop.png) and [mobile catalog](screenshots/student-catalog-mobile.png).
+
+## Guided UI
+
+The business builder separates description, clarification, card review, and publication. A sticky action bar shows the current step, unsaved state, and the relevant action. Clarification can be skipped for manual entry. Saving a draft does not confirm it; publication always requires the current card to be confirmed. The publication preview and rating show the last confirmed version, with an explanation when edits are pending. Missing readiness fields link back to their inputs.
+
+Starting a new task asks before discarding unsaved card content or unanswered clarification work. A browser unload warning also covers unsaved card content, clarification answers, and proposal drafts. These drafts are kept in memory, not autosaved; saved task IDs are restored from local storage as before.
+
+The student catalog includes keyword search, topic/readiness filters, and a reset control. At widths of 820px or below, selecting a task opens its details in place of the list, with a back button. Proposal drafts are retained separately for each task during the session. Required fields show inline errors, focus moves to the first invalid field, and successful submission is confirmed beside the form.
+
+### Browser regression checks
+
+Use a separate seeded test database when another test run is active. Verify:
+
+- Blank description/title validation focuses the missing input; clarification answers transfer into the right fields.
+- A new task is not scored until confirmation. A low-rated confirmed task can still publish.
+- Missing-field links focus inputs; unconfirmed edits keep the old rating and disable publication with an explanation.
+- New-task protection preserves entered work when cancelled. Saving a draft and reopening it preserves saved fields.
+- At desktop and phone widths, action controls remain usable, and the phone catalog has a working back path.
+- Search, empty results, and filter reset work. Proposal drafts do not leak between tasks.
+- Submitting a valid proposal clears only that task's draft and shows a nearby confirmation.
+- Business review loads the submitted proposal; manual selection and refresh retain the correct decision.
+
+## Motion and loading
+
+Step panels enter over 200ms; the active step background moves between positions. On phones, task details enter from the side over 240ms, and the back button restores the list's prior scroll offset. Navigation changes remain immediately interactive, without waiting for an exit animation.
+
+The readiness ring animates confirmed score changes over 520ms, cancelling an interrupted animation before starting another. Initial scores and catalog selection render immediately. Screen readers receive the confirmed target score, not every intermediate number. `prefers-reduced-motion` disables movement, counting, pulsing, spinning, and smooth scrolling, including when the preference changes during a session.
+
+Initial loads use skeleton cards. Refresh retains existing results and shows a compact loading state on the refresh button. Busy labels reserve the space needed by both states; required fields reserve validation-message space. Saving a draft briefly displays a nearby checkmark. No additional animation package is required.
+
+Motion checks: verify step navigation and editing during transitions; compare button widths before/during requests; verify first-load skeletons and retained refresh results with a throttled test API; confirm a score change interpolates and reaches the target; open/back from a scrolled phone catalog and check its offset; enable reduced motion and confirm immediate updates without movement.
