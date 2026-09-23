@@ -5,6 +5,7 @@ import { RecommendationFocus, useRecommendations } from './Recommendations'
 import { DemoEntry } from './DemoEntry'
 import { clearDemoPersona, readDemoPersona, saveDemoPersona, type DemoPersona } from './demoSession'
 import { MilestonePanel } from './MilestonePanel'
+import { CompletionDialog, SuccessMark } from './CompletionDialog'
 import {
   CARD_FIELDS,
   EMPTY_CARD,
@@ -177,6 +178,8 @@ function App() {
   const reducedMotion = useReducedMotion()
   const catalogScroll = useRef(0)
   const [savedFeedback, setSavedFeedback] = useState(false)
+  const [savedAt, setSavedAt] = useState('')
+  const [publicationComplete, setPublicationComplete] = useState(false)
   const [persona, setPersona] = useState<DemoPersona | null>(readDemoPersona)
   const [businessPage, setBusinessPage] = useState<BusinessPage>('builder')
   const [card, setCard] = useState<EditableCard>({ ...EMPTY_CARD })
@@ -281,11 +284,8 @@ function App() {
   }
 
   useEffect(() => {
-    if (!savedFeedback) return
-    if (dirty) { setSavedFeedback(false); return }
-    const timeout = window.setTimeout(() => setSavedFeedback(false), 2400)
-    return () => window.clearTimeout(timeout)
-  }, [savedFeedback, dirty])
+    if (dirty) setSavedFeedback(false)
+  }, [dirty])
 
   function goToField(field: CardField) {
     setStep(['description', 'industry', 'topic'].includes(field) ? 'description' : 'review')
@@ -442,6 +442,7 @@ function App() {
   }
 
   function keepTask(next: TaskCard) {
+    setSavedAt(new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }))
     setTask(next)
     setCard(editableFromTask(next))
     localStorage.setItem('hackalem.currentTaskId', next.id)
@@ -474,6 +475,7 @@ function App() {
       goToField(!card.description.trim() ? 'description' : 'title')
       return
     }
+    setSavedFeedback(false)
     setBuilderAction('confirm')
     try {
       let id = task?.id
@@ -485,7 +487,7 @@ function App() {
       const next = await api.confirmTask(id, card)
       keepTask(next)
       setStep('publish')
-      setNotice(`Карточка подтверждена. Рейтинг готовности: ${next.score} из 100.`)
+      if (next.status === 'published') setNotice('Изменения сохранены. Команды видят обновлённую карточку.')
       if (next.status === 'published') await refreshCatalog()
     } catch (error) {
       setBuilderError(errorMessage(error))
@@ -505,8 +507,8 @@ function App() {
     try {
       const next = await api.publishTask(task.id)
       keepTask(next)
-      await refreshCatalog()
-      setNotice('Задача опубликована и доступна всем командам, независимо от рейтинга.')
+      setPublicationComplete(true)
+      void refreshCatalog()
     } catch (error) {
       setBuilderError(errorMessage(error))
     } finally {
@@ -514,9 +516,16 @@ function App() {
     }
   }
 
+  function closePublication() {
+    setPublicationComplete(false)
+    requestAnimationFrame(() => document.getElementById('publish-title')?.focus())
+  }
+
   function newTask() {
     setShowNewTaskPrompt(false)
+    setPublicationComplete(false)
     setSavedFeedback(false)
+    setSavedAt('')
     setFieldErrors({})
     setStep('description')
     setQuestionSource(null)
@@ -529,6 +538,7 @@ function App() {
     setNotice('Новая карточка готова к заполнению.')
     localStorage.removeItem('hackalem.currentTaskId')
     setBusinessPage('builder')
+    requestAnimationFrame(() => document.getElementById('description-title')?.focus())
   }
 
   function enterBusiness() {
@@ -638,11 +648,20 @@ function App() {
           {workspace === 'business' && <button className="button button--outline page-heading__action" type="button" disabled={fieldsDisabled} onClick={() => (dirty || hasUnappliedAnswers) ? setShowNewTaskPrompt(true) : newTask()}>+ Новая задача</button>}
         </div>
 
-        {showNewTaskPrompt && <div className="new-task-prompt" role="alert">
-          <div><strong>Есть несохранённые изменения</strong><p>Перенесите ответы в карточку и сохраните изменения или начните новую задачу.</p></div>
-          <button className="button button--dark" type="button" autoFocus onClick={() => setShowNewTaskPrompt(false)}>Вернуться к карточке</button>
-          <button className="button button--outline" type="button" onClick={newTask}>Начать без сохранения</button>
-        </div>}
+        <CompletionDialog open={showNewTaskPrompt} title="Начать новую задачу?" description={hasUnappliedAnswers ? 'Введённые ответы ещё не перенесены в карточку. Если начать заново, они и несохранённые изменения будут потеряны.' : 'В карточке есть несохранённые изменения. Вернитесь к ней, чтобы закончить работу, или начните заново.'} onClose={() => setShowNewTaskPrompt(false)}>
+          <div className="dialog-actions">
+            <button className="button button--dark" type="button" onClick={() => setShowNewTaskPrompt(false)}>Продолжить редактирование</button>
+            <button className="button button--text button--danger" type="button" onClick={newTask}>Начать без сохранения</button>
+          </div>
+        </CompletionDialog>
+        <CompletionDialog open={publicationComplete} success title="Задача опубликована" description="Всё готово. Теперь команды могут найти вашу задачу и предложить решение." onClose={closePublication}>
+          <div className="publication-receipt"><span>ДОСТУПНА ВСЕМ КОМАНДАМ</span><strong>{task?.title}</strong><small>Готовность: {task?.score ?? 0} / 100 · Любая команда может откликнуться</small></div>
+          <p className="dialog-next">Следующий шаг — сравнить отклики и выбрать команду. Они появятся в разделе «Отклики команд».</p>
+          <div className="dialog-actions">
+            <button className="button button--dark" type="button" onClick={() => { setPublicationComplete(false); setBusinessTaskId(task?.id ?? ''); setBusinessPage('responses'); requestAnimationFrame(() => document.getElementById('responses-title')?.focus()) }}>Перейти к откликам <ArrowIcon /></button>
+            <button className="button button--outline" type="button" onClick={closePublication}>Посмотреть карточку</button>
+          </div>
+        </CompletionDialog>
         {notice && <div className="notice" role="status"><span>{notice}</span><button type="button" aria-label="Закрыть уведомление" onClick={() => setNotice('')}>×</button></div>}
         {workspace === 'student' && activeTeam && <div className="team-banner"><div><span>Вы вошли как команда</span><strong>{activeTeam.name}</strong><small>{activeTeam.skills.join(' · ')}</small></div><div className="team-banner__points"><strong>{activeTeam.progressPoints}</strong><span>баллов прогресса</span></div></div>}
 
@@ -658,7 +677,6 @@ function App() {
                   <nav className="steps" aria-label="Этапы работы" style={{ '--step-index': currentStepIndex, '--step-column': currentStepIndex % 2, '--step-row': Math.floor(currentStepIndex / 2) } as React.CSSProperties}>
                     {builderSteps.map((item, index) => <button type="button" key={item.key} className={`steps__item ${step === item.key ? 'is-active' : ''}`} aria-current={step === item.key ? 'step' : undefined} disabled={fieldsDisabled || (item.key === 'questions' && !questions.length) || (item.key === 'publish' && !task?.confirmedAt)} onClick={() => setStep(item.key)}><b aria-hidden="true">{(item.key === 'description' && card.description.trim().length >= 8) || (item.key === 'questions' && clarificationReviewed && !hasUnappliedAnswers) || (item.key === 'review' && publishReady) || (item.key === 'publish' && task?.status === 'published') ? '✓' : String(index + 1).padStart(2, '0')}</b>{item.label}</button>)}
                   </nav>
-                  {builderError && <p className="error-message" role="alert">{builderError}</p>}
 
                   {step === 'description' && <section className="work-section step-panel" aria-labelledby="description-title">
                     <fieldset disabled={fieldsDisabled}>
@@ -693,6 +711,7 @@ function App() {
 
                   {step === 'publish' && <section className="work-section publish-preview step-panel" aria-labelledby="publish-title">
                     <div className="section-heading"><span className="section-heading__number">04</span><div><h2 ref={stepHeading} tabIndex={-1} id="publish-title">{task?.status === 'published' ? 'Задача опубликована' : 'Проверьте перед публикацией'}</h2><p>{task?.status === 'published' ? 'Эту версию видят студенческие команды.' : 'Так вашу задачу увидят студенческие команды.'}</p></div></div>
+                    {!dirty && <div className="completion-banner"><SuccessMark /><div><strong>{task?.status === 'published' ? 'Задача уже в каталоге' : 'Карточка подтверждена и сохранена'}</strong><p>{task?.status === 'published' ? 'Команды могут откликаться. Выберите подходящее предложение в разделе откликов.' : 'Остался один шаг: опубликуйте задачу, чтобы команды смогли её увидеть.'}</p></div><span className="completion-banner__badge">{task?.status === 'published' ? 'В эфире' : 'Можно публиковать'}</span></div>}
                     {dirty && <p className="inline-note">Показана последняя подтверждённая версия. Подтвердите изменения в карточке перед публикацией.</p>}
                     <p className="task-detail__meta">{task?.industry || 'Отрасль не указана'} · {task?.topic || 'Без темы'}</p>
                     <h3>{task?.title}</h3><p className="task-detail__summary">{task?.description}</p>
@@ -700,15 +719,17 @@ function App() {
                     <p className="muted publish-note">Можно публиковать с любым рейтингом. Чем больше конкретики, тем проще командам предложить решение.</p>
                   </section>}
 
-                  <div className="builder-actionbar" aria-label="Действия с карточкой">
-                    <div className="builder-actionbar__status" role="status"><strong>{savedFeedback && <span className="save-check" aria-hidden="true">✓</span>}{restorePending ? 'Загружаем карточку…' : builderAction === 'save' ? 'Сохраняем черновик…' : hasUnappliedAnswers ? 'Ответы ещё не перенесены в карточку' : dirty ? 'Есть несохранённые изменения' : task ? task.status === 'published' ? 'Опубликовано' : 'Сохранено' : 'Новая карточка'}</strong><span>Шаг {currentStepIndex + 1} из 4{step === 'publish' && dirty ? ' · Сначала подтвердите изменения' : ''}</span></div>
+                  <div className={`builder-actionbar ${savedFeedback ? 'builder-actionbar--saved' : ''}`} aria-label="Действия с карточкой">
+                    {builderError && <p className="error-message" role="alert">{builderError}</p>}
+                    <div className="builder-actionbar__status" role="status"><strong>{savedFeedback && <span className="save-check" aria-hidden="true">✓</span>}{restorePending ? 'Загружаем карточку…' : builderAction === 'save' ? 'Сохраняем черновик…' : hasUnappliedAnswers ? 'Ответы ещё не перенесены в карточку' : dirty ? 'Есть несохранённые изменения' : task ? task.status === 'published' ? 'Опубликовано' : savedAt ? `Сохранено в ${savedAt}` : 'Сохранено' : 'Новая карточка'}</strong><span>Шаг {currentStepIndex + 1} из 4{step === 'publish' && dirty ? ' · Сначала подтвердите изменения' : ''}</span></div>
                     <div className="builder-actionbar__buttons">
-                      {task?.status !== 'published' && <button className="button button--outline" type="button" onClick={() => void saveDraft()} disabled={fieldsDisabled || (!dirty && !!task)}><BusyLabel busy={builderAction === 'save'} idle="Сохранить черновик" pending="Сохраняем…" /></button>}
+                      {task?.status !== 'published' && <button className="button button--outline" type="button" onClick={() => void saveDraft()} disabled={fieldsDisabled || (!dirty && !!task)}><BusyLabel busy={builderAction === 'save'} idle={savedFeedback && !dirty ? 'Черновик сохранён' : 'Сохранить черновик'} pending="Сохраняем…" /></button>}
                       {step === 'description' && <><button className="button button--text" type="button" disabled={fieldsDisabled} onClick={() => setStep('review')}>Заполнить самостоятельно</button><button className="button button--dark" type="button" disabled={fieldsDisabled} onClick={() => void analyze()}><BusyLabel busy={builderAction === 'analyze'} idle="Получить вопросы" pending="Готовим вопросы…" /> <ArrowIcon /></button></>}
                       {step === 'questions' && <button className="button button--dark" type="button" disabled={fieldsDisabled} onClick={applyAnswers}>{Object.values(answers).some((value) => value.trim()) ? 'Перенести ответы и продолжить' : 'Продолжить без ответов'} <ArrowIcon /></button>}
                       {step === 'review' && <button className="button button--dark" type="button" onClick={() => void confirm()} disabled={fieldsDisabled}><BusyLabel busy={builderAction === 'confirm'} idle={task?.confirmedAt ? 'Подтвердить изменения' : 'Подтвердить карточку'} pending="Подтверждаем…" /> <ArrowIcon /></button>}
                       {step === 'publish' && <><button className="button button--outline" type="button" disabled={fieldsDisabled} onClick={() => setStep('review')}>Редактировать карточку</button>{task?.status !== 'published' ? <button className="button button--accent" type="button" onClick={() => void publish()} aria-describedby="publish-help" disabled={fieldsDisabled || !publishReady}><BusyLabel busy={builderAction === 'publish'} idle="Опубликовать" pending="Публикуем…" /> <ArrowIcon /></button> : <button className="button button--dark" type="button" onClick={() => { changeParticipant(); setSelectedTaskId(task.id); setSearch(''); setTopicFilter(''); setReadinessFilter(''); setMobileDetailOpen(true); void refreshCatalog() }}>Открыть как команда <ArrowIcon /></button>}</>}
                     </div>
+                    {savedFeedback && <p className="save-receipt" role="status">{hasUnappliedAnswers ? 'Карточка сохранена. Ответы на вопросы нужно отдельно перенести в карточку и сохранить.' : 'Черновик сохранён. Команды увидят задачу только после публикации.'}</p>}
                     {step === 'publish' && task?.status !== 'published' && <p id="publish-help" className="builder-actionbar__help">{publishReady ? 'После публикации задачу увидят все команды.' : 'Сначала подтвердите текущую версию карточки.'}</p>}
                   </div>
                 </div>
@@ -728,7 +749,7 @@ function App() {
               </div>
             ) : (
               <section className="responses-layout" aria-labelledby="responses-title">
-                <div className="responses-intro"><div><p className="eyebrow">РЕШЕНИЕ ЗА БИЗНЕСОМ</p><h2 id="responses-title">Отклики команд</h2><p>Сравните предложения и выберите одну, несколько или ни одной команды.</p></div><button className="button button--outline" disabled={catalogLoading} onClick={() => void refreshCatalog()} type="button"><BusyLabel busy={catalogLoading || proposalsLoading} idle="Обновить список" pending="Обновляем…" /></button></div>
+                <div className="responses-intro"><div><p className="eyebrow">РЕШЕНИЕ ЗА БИЗНЕСОМ</p><h2 id="responses-title" tabIndex={-1}>Отклики команд</h2><p>Сравните предложения и выберите одну, несколько или ни одной команды.</p></div><button className="button button--outline" disabled={catalogLoading} onClick={() => void refreshCatalog()} type="button"><BusyLabel busy={catalogLoading || proposalsLoading} idle="Обновить список" pending="Обновляем…" /></button></div>
                 {catalogLoading && !tasks.length && <LoadingCards label="Загружаем опубликованные задачи…" count={1} />}
                 {catalogError && <div className="error-message" role="alert"><span>{catalogError}</span><button className="button button--outline" type="button" disabled={catalogLoading} onClick={() => void refreshCatalog()}>Попробовать снова</button></div>}
                 <label className="field field--narrow"><span className="field__label">Задача</span><select value={businessTaskId} onChange={(event) => setBusinessTaskId(event.target.value)} disabled={!businessTasks.length}><option value="">Выберите задачу</option>{businessTasks.map((item) => <option key={item.id} value={item.id}>{item.title || 'Без названия'} · {item.score}/100</option>)}</select></label>
