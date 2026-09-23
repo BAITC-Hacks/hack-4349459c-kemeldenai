@@ -1,0 +1,1108 @@
+[
+  {
+    "method": "GET",
+    "path": "/api/health",
+    "request": null,
+    "status": 200,
+    "response": {
+      "status": "ok",
+      "database": "ok"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/analyze",
+    "request": {
+      "description": "Нужен сервис для магазина",
+      "industry": "Торговля"
+    },
+    "status": 200,
+    "response": {
+      "questions": [
+        {
+          "field": "context",
+          "question": "Как сейчас устроен процесс и в какой ситуации возникла задача?"
+        },
+        {
+          "field": "need",
+          "question": "Какую конкретную проблему бизнеса нужно решить и почему это важно?"
+        },
+        {
+          "field": "users",
+          "question": "Кто будет пользоваться решением и какие действия им нужны?"
+        }
+      ],
+      "source": "fallback"
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/tasks",
+    "request": null,
+    "status": 200,
+    "response": [
+      {
+        "id": "00000000-0000-0000-0000-0000000003e9",
+        "title": "Сократить отходы упаковки",
+        "industry": "Розничная торговля",
+        "topic": "Экология",
+        "description": "Сократить одноразовую упаковку при доставке заказов.",
+        "context": "Городские магазины отправляют 500 заказов в день.",
+        "need": "Снизить отходы упаковки без повреждения товаров.",
+        "users": "Сотрудники магазина и покупатели доставки.",
+        "dataMaterials": "Доступны записи о заказах и упаковке за шесть месяцев.",
+        "constraints": "Использовать текущие станции упаковки; пилот длится два месяца.",
+        "expectedResult": "Проверенная рекомендация и работающий прототип.",
+        "successCriteria": "Снизить массу упаковки на 20% без роста повреждений.",
+        "contact": "Руководитель службы доставки",
+        "interaction": "Еженедельная встреча с руководителем.",
+        "status": "published",
+        "confirmedAt": "2026-09-23T08:52:01.722481Z",
+        "score": 100,
+        "readiness": "priority",
+        "breakdown": [
+          {
+            "key": "context",
+            "label": "Контекст бизнеса",
+            "earned": 10,
+            "maximum": 10
+          },
+          {
+            "key": "need",
+            "label": "Потребность бизнеса",
+            "earned": 10,
+            "maximum": 10
+          },
+          {
+            "key": "dataMaterials",
+            "label": "Доступные данные и материалы",
+            "earned": 20,
+            "maximum": 20
+          },
+          {
+            "key": "expectedResult",
+            "label": "Ожидаемый результат",
+            "earned": 15,
+            "maximum": 15
+          },
+          {
+            "key": "successCriteria",
+            "label": "Критерии успеха",
+            "earned": 15,
+            "maximum": 15
+          },
+          {
+            "key": "constraints",
+            "label": "Ограничения",
+            "earned": 10,
+            "maximum": 10
+          },
+          {
+            "key": "users",
+            "label": "Пользователи",
+            "earned": 10,
+            "maximum": 10
+          },
+          {
+            "key": "contact",
+            "label": "Контакт бизнеса",
+            "earned": 5,
+            "maximum": 5
+          },
+          {
+            "key": "interaction",
+            "label": "Формат взаимодействия",
+            "earned": 5,
+            "maximum": 5
+          }
+        ],
+        "missing": [],
+        "createdAt": "2026-09-23T08:52:01.732214Z",
+        "updatedAt": "2026-09-23T08:52:01.732221Z"
+      },
+      {
+        "id": "00000000-0000-0000-0000-0000000003ed",
+        "title": "Сократить пищевые отходы столовой",
+        "industry": "Общественное питание",
+        "topic": "Экология",
+        "description": "Улучшить ежедневное планирование обедов в столовой.",
+        "context": "Столовая готовит обеды примерно для 300 сотрудников.",
+        "need": "Снизить остатки съедобной еды, сохранив популярные блюда.",
+        "users": "Повара и сотрудники компании.",
+        "dataMaterials": "Записываются меню, число порций и масса остатков.",
+        "constraints": "",
+        "expectedResult": "Прототип прогноза и план корректировки меню.",
+        "successCriteria": "Сократить съедобные остатки на 15% за шесть недель.",
+        "contact": "Руководитель столовой",
+        "interaction": "Еженедельный очный разбор.",
+        "status": "published",
+        "confirmedAt": "2026-09-23T08:52:01.724343Z",
+        "score": 90,
+        "readiness": "priority",
+        "breakdown": [
+          {
+            "key": "context",
+            "label": "Контекст бизнеса",
+            "earned": 10,
+            "maximum": 10
+          },
+          {
+            "key": "need",
+            "label": "Потребность бизнеса",
+            "earned": 10,
+            "maximum": 10
+          },
+          {
+            "key": "dataMaterials",
+            "label": "Доступные данные и материалы",
+            "earned": 20,
+            "maximum": 20
+          },
+          {
+            "key": "expectedResult",
+            "label": "Ожидаемый результат",
+            "earned": 15,
+            "maximum": 15
+          },
+          {
+            "key": "successCriteria",
+            "label": "Критерии успеха",
+            "earned": 15,
+            "maximum": 15
+          },
+          {
+            "key": "constraints",
+            "label": "Ограничения",
+            "earned": 0,
+            "maximum": 10
+          },
+          {
+            "key": "users",
+            "label": "Пользователи",
+            "earned": 10,
+            "maximum": 10
+          },
+          {
+            "key": "contact",
+            "label": "Контакт бизнеса",
+            "earned": 5,
+            "maximum": 5
+          },
+          {
+            "key": "interaction",
+            "label": "Формат взаимодействия",
+            "earned": 5,
+            "maximum": 5
+          }
+        ],
+        "missing": [
+          "constraints"
+        ],
+        "createdAt": "2026-09-23T08:52:01.732224Z",
+        "updatedAt": "2026-09-23T08:52:01.732224Z"
+      },
+      {
+        "id": "00000000-0000-0000-0000-0000000003ea",
+        "title": "Упростить запись в поликлинику",
+        "industry": "Здравоохранение",
+        "topic": "Сервисы",
+        "description": "Сделать запись на приём удобнее для районной поликлиники.",
+        "context": "Поликлиника принимает 140 пациентов в будний день.",
+        "need": "Снизить число пропущенных приёмов и ожидание по телефону.",
+        "users": "Регистраторы и взрослые пациенты.",
+        "dataMaterials": "Есть обезличенные сводки о записях и звонках.",
+        "constraints": "",
+        "expectedResult": "Прототип записи и рекомендации по внедрению.",
+        "successCriteria": "Сократить ожидание по телефону на 15% за четыре недели.",
+        "contact": "",
+        "interaction": "",
+        "status": "published",
+        "confirmedAt": "2026-09-23T08:52:01.723010Z",
+        "score": 80,
+        "readiness": "ready",
+        "breakdown": [
+          {
+            "key": "context",
+            "label": "Контекст бизнеса",
+            "earned": 10,
+            "maximum": 10
+          },
+          {
+            "key": "need",
+            "label": "Потребность бизнеса",
+            "earned": 10,
+            "maximum": 10
+          },
+          {
+            "key": "dataMaterials",
+            "label": "Доступные данные и материалы",
+            "earned": 20,
+            "maximum": 20
+          },
+          {
+            "key": "expectedResult",
+            "label": "Ожидаемый результат",
+            "earned": 15,
+            "maximum": 15
+          },
+          {
+            "key": "successCriteria",
+            "label": "Критерии успеха",
+            "earned": 15,
+            "maximum": 15
+          },
+          {
+            "key": "constraints",
+            "label": "Ограничения",
+            "earned": 0,
+            "maximum": 10
+          },
+          {
+            "key": "users",
+            "label": "Пользователи",
+            "earned": 10,
+            "maximum": 10
+          },
+          {
+            "key": "contact",
+            "label": "Контакт бизнеса",
+            "earned": 0,
+            "maximum": 5
+          },
+          {
+            "key": "interaction",
+            "label": "Формат взаимодействия",
+            "earned": 0,
+            "maximum": 5
+          }
+        ],
+        "missing": [
+          "constraints",
+          "contact",
+          "interaction"
+        ],
+        "createdAt": "2026-09-23T08:52:01.732222Z",
+        "updatedAt": "2026-09-23T08:52:01.732222Z"
+      },
+      {
+        "id": "00000000-0000-0000-0000-0000000003eb",
+        "title": "Спланировать запасы мастерской",
+        "industry": "Производство",
+        "topic": "Аналитика",
+        "description": "Помочь ремонтной мастерской держать нужные запчасти в наличии.",
+        "context": "Мастера ремонтируют бытовую технику в двух точках.",
+        "need": "Уменьшить дефицит ходовых деталей и избыток залежавшихся.",
+        "users": "Мастера и сотрудники закупок.",
+        "dataMaterials": "",
+        "constraints": "Рекомендации должны выгружаться в таблицу.",
+        "expectedResult": "Панель запасов и руководство по повторным заказам.",
+        "successCriteria": "",
+        "contact": "",
+        "interaction": "Обсуждение результатов раз в две недели.",
+        "status": "published",
+        "confirmedAt": "2026-09-23T08:52:01.723480Z",
+        "score": 60,
+        "readiness": "workable",
+        "breakdown": [
+          {
+            "key": "context",
+            "label": "Контекст бизнеса",
+            "earned": 10,
+            "maximum": 10
+          },
+          {
+            "key": "need",
+            "label": "Потребность бизнеса",
+            "earned": 10,
+            "maximum": 10
+          },
+          {
+            "key": "dataMaterials",
+            "label": "Доступные данные и материалы",
+            "earned": 0,
+            "maximum": 20
+          },
+          {
+            "key": "expectedResult",
+            "label": "Ожидаемый результат",
+            "earned": 15,
+            "maximum": 15
+          },
+          {
+            "key": "successCriteria",
+            "label": "Критерии успеха",
+            "earned": 0,
+            "maximum": 15
+          },
+          {
+            "key": "constraints",
+            "label": "Ограничения",
+            "earned": 10,
+            "maximum": 10
+          },
+          {
+            "key": "users",
+            "label": "Пользователи",
+            "earned": 10,
+            "maximum": 10
+          },
+          {
+            "key": "contact",
+            "label": "Контакт бизнеса",
+            "earned": 0,
+            "maximum": 5
+          },
+          {
+            "key": "interaction",
+            "label": "Формат взаимодействия",
+            "earned": 5,
+            "maximum": 5
+          }
+        ],
+        "missing": [
+          "dataMaterials",
+          "successCriteria",
+          "contact"
+        ],
+        "createdAt": "2026-09-23T08:52:01.732222Z",
+        "updatedAt": "2026-09-23T08:52:01.732223Z"
+      },
+      {
+        "id": "00000000-0000-0000-0000-0000000003ec",
+        "title": "Сделать остановки доступнее",
+        "industry": "Транспорт",
+        "topic": "Доступность",
+        "description": "Улучшить информацию о доступности автобусных остановок.",
+        "context": "Перевозчик обслуживает 42 маршрута и 620 остановок.",
+        "need": "Помочь пассажирам найти маршрут при закрытии остановки.",
+        "users": "Пассажиры с ограниченной мобильностью и нарушением зрения.",
+        "dataMaterials": "",
+        "constraints": "",
+        "expectedResult": "",
+        "successCriteria": "",
+        "contact": "",
+        "interaction": "",
+        "status": "published",
+        "confirmedAt": "2026-09-23T08:52:01.723897Z",
+        "score": 30,
+        "readiness": "draft",
+        "breakdown": [
+          {
+            "key": "context",
+            "label": "Контекст бизнеса",
+            "earned": 10,
+            "maximum": 10
+          },
+          {
+            "key": "need",
+            "label": "Потребность бизнеса",
+            "earned": 10,
+            "maximum": 10
+          },
+          {
+            "key": "dataMaterials",
+            "label": "Доступные данные и материалы",
+            "earned": 0,
+            "maximum": 20
+          },
+          {
+            "key": "expectedResult",
+            "label": "Ожидаемый результат",
+            "earned": 0,
+            "maximum": 15
+          },
+          {
+            "key": "successCriteria",
+            "label": "Критерии успеха",
+            "earned": 0,
+            "maximum": 15
+          },
+          {
+            "key": "constraints",
+            "label": "Ограничения",
+            "earned": 0,
+            "maximum": 10
+          },
+          {
+            "key": "users",
+            "label": "Пользователи",
+            "earned": 10,
+            "maximum": 10
+          },
+          {
+            "key": "contact",
+            "label": "Контакт бизнеса",
+            "earned": 0,
+            "maximum": 5
+          },
+          {
+            "key": "interaction",
+            "label": "Формат взаимодействия",
+            "earned": 0,
+            "maximum": 5
+          }
+        ],
+        "missing": [
+          "dataMaterials",
+          "expectedResult",
+          "successCriteria",
+          "constraints",
+          "contact",
+          "interaction"
+        ],
+        "createdAt": "2026-09-23T08:52:01.732223Z",
+        "updatedAt": "2026-09-23T08:52:01.732223Z"
+      }
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/teams",
+    "request": null,
+    "status": 200,
+    "response": [
+      {
+        "id": "00000000-0000-0000-0000-0000000007d2",
+        "name": "Data Nomads",
+        "interests": [
+          "операции",
+          "экология"
+        ],
+        "skills": [
+          "аналитика",
+          "серверная разработка"
+        ],
+        "technologies": [
+          "Python",
+          "PostgreSQL"
+        ],
+        "progressPoints": 0
+      },
+      {
+        "id": "00000000-0000-0000-0000-0000000007d4",
+        "name": "Green Bytes",
+        "interests": [
+          "еда",
+          "энергия"
+        ],
+        "skills": [
+          "анализ данных",
+          "продукт"
+        ],
+        "technologies": [
+          "Python",
+          "scikit-learn"
+        ],
+        "progressPoints": 0
+      },
+      {
+        "id": "00000000-0000-0000-0000-0000000007d5",
+        "name": "Orda Makers",
+        "interests": [
+          "производство",
+          "транспорт"
+        ],
+        "skills": [
+          "электроника",
+          "разработка"
+        ],
+        "technologies": [
+          "Arduino",
+          "React"
+        ],
+        "progressPoints": 0
+      },
+      {
+        "id": "00000000-0000-0000-0000-0000000007d3",
+        "name": "Qadam Lab",
+        "interests": [
+          "доступность",
+          "здоровье"
+        ],
+        "skills": [
+          "дизайн",
+          "прототипирование"
+        ],
+        "technologies": [
+          "TypeScript",
+          "Figma"
+        ],
+        "progressPoints": 0
+      },
+      {
+        "id": "00000000-0000-0000-0000-0000000007d1",
+        "name": "Steppe Coders",
+        "interests": [
+          "госуслуги",
+          "карты"
+        ],
+        "skills": [
+          "разработка интерфейсов",
+          "исследования"
+        ],
+        "technologies": [
+          "React",
+          "Figma"
+        ],
+        "progressPoints": 0
+      }
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/tasks",
+    "request": {
+      "title": "Сервис для магазина",
+      "industry": "Торговля",
+      "description": "Помочь с заказами",
+      "topic": "Автоматизация"
+    },
+    "status": 201,
+    "response": {
+      "id": "3471a462-e428-4cf0-9c74-00d98b608fd6",
+      "title": "Сервис для магазина",
+      "industry": "Торговля",
+      "topic": "Автоматизация",
+      "description": "Помочь с заказами",
+      "context": "",
+      "need": "",
+      "users": "",
+      "dataMaterials": "",
+      "constraints": "",
+      "expectedResult": "",
+      "successCriteria": "",
+      "contact": "",
+      "interaction": "",
+      "status": "draft",
+      "confirmedAt": null,
+      "score": null,
+      "readiness": "draft",
+      "breakdown": [],
+      "missing": [],
+      "createdAt": "2026-09-23T08:52:01.755008Z",
+      "updatedAt": "2026-09-23T08:52:01.755012Z"
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/tasks/3471a462-e428-4cf0-9c74-00d98b608fd6",
+    "request": null,
+    "status": 200,
+    "response": {
+      "id": "3471a462-e428-4cf0-9c74-00d98b608fd6",
+      "title": "Сервис для магазина",
+      "industry": "Торговля",
+      "topic": "Автоматизация",
+      "description": "Помочь с заказами",
+      "context": "",
+      "need": "",
+      "users": "",
+      "dataMaterials": "",
+      "constraints": "",
+      "expectedResult": "",
+      "successCriteria": "",
+      "contact": "",
+      "interaction": "",
+      "status": "draft",
+      "confirmedAt": null,
+      "score": null,
+      "readiness": "draft",
+      "breakdown": [],
+      "missing": [],
+      "createdAt": "2026-09-23T08:52:01.755008Z",
+      "updatedAt": "2026-09-23T08:52:01.755012Z"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/tasks/3471a462-e428-4cf0-9c74-00d98b608fd6/publish",
+    "request": null,
+    "status": 409,
+    "response": {
+      "error": "Сначала подтвердите карточку задачи"
+    }
+  },
+  {
+    "method": "PUT",
+    "path": "/api/tasks/3471a462-e428-4cf0-9c74-00d98b608fd6",
+    "request": {
+      "title": "Сервис для магазина",
+      "industry": "Торговля",
+      "description": "Помочь с заказами",
+      "topic": "Автоматизация",
+      "context": "Магазин вручную обрабатывает 100 заявок в день",
+      "need": "Снизить время обработки заявок",
+      "users": "Менеджеры магазина",
+      "dataMaterials": "Доступны обезличенные заказы за полгода",
+      "constraints": "Работать в браузере; пилот за месяц",
+      "expectedResult": "Прототип панели обработки заказов",
+      "successCriteria": "Сократить среднее время обработки на 20%",
+      "contact": "Менеджер демо-магазина, demo@example.org",
+      "interaction": "Еженедельная проверка прототипа"
+    },
+    "status": 200,
+    "response": {
+      "id": "3471a462-e428-4cf0-9c74-00d98b608fd6",
+      "title": "Сервис для магазина",
+      "industry": "Торговля",
+      "topic": "Автоматизация",
+      "description": "Помочь с заказами",
+      "context": "Магазин вручную обрабатывает 100 заявок в день",
+      "need": "Снизить время обработки заявок",
+      "users": "Менеджеры магазина",
+      "dataMaterials": "Доступны обезличенные заказы за полгода",
+      "constraints": "Работать в браузере; пилот за месяц",
+      "expectedResult": "Прототип панели обработки заказов",
+      "successCriteria": "Сократить среднее время обработки на 20%",
+      "contact": "Менеджер демо-магазина, demo@example.org",
+      "interaction": "Еженедельная проверка прототипа",
+      "status": "draft",
+      "confirmedAt": null,
+      "score": null,
+      "readiness": "draft",
+      "breakdown": [],
+      "missing": [],
+      "createdAt": "2026-09-23T08:52:01.755008Z",
+      "updatedAt": "2026-09-23T08:52:01.765863Z"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/tasks/3471a462-e428-4cf0-9c74-00d98b608fd6/confirm",
+    "request": {
+      "title": "Сервис для магазина",
+      "industry": "Торговля",
+      "description": "Помочь с заказами",
+      "topic": "Автоматизация",
+      "context": "Магазин вручную обрабатывает 100 заявок в день",
+      "need": "Снизить время обработки заявок",
+      "users": "Менеджеры магазина",
+      "dataMaterials": "Доступны обезличенные заказы за полгода",
+      "constraints": "Работать в браузере; пилот за месяц",
+      "expectedResult": "Прототип панели обработки заказов",
+      "successCriteria": "Сократить среднее время обработки на 20%",
+      "contact": "Менеджер демо-магазина, demo@example.org",
+      "interaction": "Еженедельная проверка прототипа"
+    },
+    "status": 200,
+    "response": {
+      "id": "3471a462-e428-4cf0-9c74-00d98b608fd6",
+      "title": "Сервис для магазина",
+      "industry": "Торговля",
+      "topic": "Автоматизация",
+      "description": "Помочь с заказами",
+      "context": "Магазин вручную обрабатывает 100 заявок в день",
+      "need": "Снизить время обработки заявок",
+      "users": "Менеджеры магазина",
+      "dataMaterials": "Доступны обезличенные заказы за полгода",
+      "constraints": "Работать в браузере; пилот за месяц",
+      "expectedResult": "Прототип панели обработки заказов",
+      "successCriteria": "Сократить среднее время обработки на 20%",
+      "contact": "Менеджер демо-магазина, demo@example.org",
+      "interaction": "Еженедельная проверка прототипа",
+      "status": "draft",
+      "confirmedAt": "2026-09-23T08:52:01.770180Z",
+      "score": 100,
+      "readiness": "priority",
+      "breakdown": [
+        {
+          "key": "context",
+          "label": "Контекст бизнеса",
+          "earned": 10,
+          "maximum": 10
+        },
+        {
+          "key": "need",
+          "label": "Потребность бизнеса",
+          "earned": 10,
+          "maximum": 10
+        },
+        {
+          "key": "dataMaterials",
+          "label": "Доступные данные и материалы",
+          "earned": 20,
+          "maximum": 20
+        },
+        {
+          "key": "expectedResult",
+          "label": "Ожидаемый результат",
+          "earned": 15,
+          "maximum": 15
+        },
+        {
+          "key": "successCriteria",
+          "label": "Критерии успеха",
+          "earned": 15,
+          "maximum": 15
+        },
+        {
+          "key": "constraints",
+          "label": "Ограничения",
+          "earned": 10,
+          "maximum": 10
+        },
+        {
+          "key": "users",
+          "label": "Пользователи",
+          "earned": 10,
+          "maximum": 10
+        },
+        {
+          "key": "contact",
+          "label": "Контакт бизнеса",
+          "earned": 5,
+          "maximum": 5
+        },
+        {
+          "key": "interaction",
+          "label": "Формат взаимодействия",
+          "earned": 5,
+          "maximum": 5
+        }
+      ],
+      "missing": [],
+      "createdAt": "2026-09-23T08:52:01.755008Z",
+      "updatedAt": "2026-09-23T08:52:01.770416Z"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/tasks/3471a462-e428-4cf0-9c74-00d98b608fd6/publish",
+    "request": null,
+    "status": 200,
+    "response": {
+      "id": "3471a462-e428-4cf0-9c74-00d98b608fd6",
+      "title": "Сервис для магазина",
+      "industry": "Торговля",
+      "topic": "Автоматизация",
+      "description": "Помочь с заказами",
+      "context": "Магазин вручную обрабатывает 100 заявок в день",
+      "need": "Снизить время обработки заявок",
+      "users": "Менеджеры магазина",
+      "dataMaterials": "Доступны обезличенные заказы за полгода",
+      "constraints": "Работать в браузере; пилот за месяц",
+      "expectedResult": "Прототип панели обработки заказов",
+      "successCriteria": "Сократить среднее время обработки на 20%",
+      "contact": "Менеджер демо-магазина, demo@example.org",
+      "interaction": "Еженедельная проверка прототипа",
+      "status": "published",
+      "confirmedAt": "2026-09-23T08:52:01.770180Z",
+      "score": 100,
+      "readiness": "priority",
+      "breakdown": [
+        {
+          "key": "context",
+          "label": "Контекст бизнеса",
+          "earned": 10,
+          "maximum": 10
+        },
+        {
+          "key": "need",
+          "label": "Потребность бизнеса",
+          "earned": 10,
+          "maximum": 10
+        },
+        {
+          "key": "dataMaterials",
+          "label": "Доступные данные и материалы",
+          "earned": 20,
+          "maximum": 20
+        },
+        {
+          "key": "expectedResult",
+          "label": "Ожидаемый результат",
+          "earned": 15,
+          "maximum": 15
+        },
+        {
+          "key": "successCriteria",
+          "label": "Критерии успеха",
+          "earned": 15,
+          "maximum": 15
+        },
+        {
+          "key": "constraints",
+          "label": "Ограничения",
+          "earned": 10,
+          "maximum": 10
+        },
+        {
+          "key": "users",
+          "label": "Пользователи",
+          "earned": 10,
+          "maximum": 10
+        },
+        {
+          "key": "contact",
+          "label": "Контакт бизнеса",
+          "earned": 5,
+          "maximum": 5
+        },
+        {
+          "key": "interaction",
+          "label": "Формат взаимодействия",
+          "earned": 5,
+          "maximum": 5
+        }
+      ],
+      "missing": [],
+      "createdAt": "2026-09-23T08:52:01.755008Z",
+      "updatedAt": "2026-09-23T08:52:01.775473Z"
+    }
+  },
+  {
+    "method": "PUT",
+    "path": "/api/tasks/3471a462-e428-4cf0-9c74-00d98b608fd6",
+    "request": {
+      "title": "Сервис для магазина",
+      "industry": "Торговля",
+      "description": "Помочь с заказами",
+      "topic": "Автоматизация"
+    },
+    "status": 409,
+    "response": {
+      "error": "Опубликованную задачу можно изменить только после подтверждения"
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/tasks/3471a462-e428-4cf0-9c74-00d98b608fd6",
+    "request": null,
+    "status": 200,
+    "response": {
+      "id": "3471a462-e428-4cf0-9c74-00d98b608fd6",
+      "title": "Сервис для магазина",
+      "industry": "Торговля",
+      "topic": "Автоматизация",
+      "description": "Помочь с заказами",
+      "context": "Магазин вручную обрабатывает 100 заявок в день",
+      "need": "Снизить время обработки заявок",
+      "users": "Менеджеры магазина",
+      "dataMaterials": "Доступны обезличенные заказы за полгода",
+      "constraints": "Работать в браузере; пилот за месяц",
+      "expectedResult": "Прототип панели обработки заказов",
+      "successCriteria": "Сократить среднее время обработки на 20%",
+      "contact": "Менеджер демо-магазина, demo@example.org",
+      "interaction": "Еженедельная проверка прототипа",
+      "status": "published",
+      "confirmedAt": "2026-09-23T08:52:01.770180Z",
+      "score": 100,
+      "readiness": "priority",
+      "breakdown": [
+        {
+          "key": "context",
+          "label": "Контекст бизнеса",
+          "earned": 10,
+          "maximum": 10
+        },
+        {
+          "key": "need",
+          "label": "Потребность бизнеса",
+          "earned": 10,
+          "maximum": 10
+        },
+        {
+          "key": "dataMaterials",
+          "label": "Доступные данные и материалы",
+          "earned": 20,
+          "maximum": 20
+        },
+        {
+          "key": "expectedResult",
+          "label": "Ожидаемый результат",
+          "earned": 15,
+          "maximum": 15
+        },
+        {
+          "key": "successCriteria",
+          "label": "Критерии успеха",
+          "earned": 15,
+          "maximum": 15
+        },
+        {
+          "key": "constraints",
+          "label": "Ограничения",
+          "earned": 10,
+          "maximum": 10
+        },
+        {
+          "key": "users",
+          "label": "Пользователи",
+          "earned": 10,
+          "maximum": 10
+        },
+        {
+          "key": "contact",
+          "label": "Контакт бизнеса",
+          "earned": 5,
+          "maximum": 5
+        },
+        {
+          "key": "interaction",
+          "label": "Формат взаимодействия",
+          "earned": 5,
+          "maximum": 5
+        }
+      ],
+      "missing": [],
+      "createdAt": "2026-09-23T08:52:01.755008Z",
+      "updatedAt": "2026-09-23T08:52:01.775473Z"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/tasks/3471a462-e428-4cf0-9c74-00d98b608fd6/proposals",
+    "request": {
+      "teamId": "00000000-0000-0000-0000-0000000007d2",
+      "idea": "Панель очереди заявок",
+      "plan": "Интервью, прототип, проверка на примерах",
+      "timeline": "Три недели",
+      "prototypeUrl": "https://example.org/prototype"
+    },
+    "status": 201,
+    "response": {
+      "id": "83feb8df-43cc-4188-bc7b-fb8a11cd1da0",
+      "taskId": "3471a462-e428-4cf0-9c74-00d98b608fd6",
+      "teamId": "00000000-0000-0000-0000-0000000007d2",
+      "idea": "Панель очереди заявок",
+      "plan": "Интервью, прототип, проверка на примерах",
+      "timeline": "Три недели",
+      "prototypeUrl": "https://example.org/prototype",
+      "decision": "pending",
+      "createdAt": "2026-09-23T08:52:01.785302Z"
+    }
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/proposals/83feb8df-43cc-4188-bc7b-fb8a11cd1da0",
+    "request": {
+      "decision": "selected"
+    },
+    "status": 200,
+    "response": {
+      "id": "83feb8df-43cc-4188-bc7b-fb8a11cd1da0",
+      "taskId": "3471a462-e428-4cf0-9c74-00d98b608fd6",
+      "teamId": "00000000-0000-0000-0000-0000000007d2",
+      "idea": "Панель очереди заявок",
+      "plan": "Интервью, прототип, проверка на примерах",
+      "timeline": "Три недели",
+      "prototypeUrl": "https://example.org/prototype",
+      "decision": "selected",
+      "createdAt": "2026-09-23T08:52:01.785302Z"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/tasks/3471a462-e428-4cf0-9c74-00d98b608fd6/proposals",
+    "request": {
+      "teamId": "00000000-0000-0000-0000-0000000007d4",
+      "idea": "Панель очереди заявок",
+      "plan": "Интервью, прототип, проверка на примерах",
+      "timeline": "Три недели",
+      "prototypeUrl": "https://example.org/prototype"
+    },
+    "status": 201,
+    "response": {
+      "id": "ba6d2841-173d-4ce0-9cb6-9126dfb2f84d",
+      "taskId": "3471a462-e428-4cf0-9c74-00d98b608fd6",
+      "teamId": "00000000-0000-0000-0000-0000000007d4",
+      "idea": "Панель очереди заявок",
+      "plan": "Интервью, прототип, проверка на примерах",
+      "timeline": "Три недели",
+      "prototypeUrl": "https://example.org/prototype",
+      "decision": "pending",
+      "createdAt": "2026-09-23T08:52:01.794173Z"
+    }
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/proposals/ba6d2841-173d-4ce0-9cb6-9126dfb2f84d",
+    "request": {
+      "decision": "selected"
+    },
+    "status": 200,
+    "response": {
+      "id": "ba6d2841-173d-4ce0-9cb6-9126dfb2f84d",
+      "taskId": "3471a462-e428-4cf0-9c74-00d98b608fd6",
+      "teamId": "00000000-0000-0000-0000-0000000007d4",
+      "idea": "Панель очереди заявок",
+      "plan": "Интервью, прототип, проверка на примерах",
+      "timeline": "Три недели",
+      "prototypeUrl": "https://example.org/prototype",
+      "decision": "selected",
+      "createdAt": "2026-09-23T08:52:01.794173Z"
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/tasks/3471a462-e428-4cf0-9c74-00d98b608fd6/proposals",
+    "request": null,
+    "status": 200,
+    "response": [
+      {
+        "id": "83feb8df-43cc-4188-bc7b-fb8a11cd1da0",
+        "taskId": "3471a462-e428-4cf0-9c74-00d98b608fd6",
+        "teamId": "00000000-0000-0000-0000-0000000007d2",
+        "idea": "Панель очереди заявок",
+        "plan": "Интервью, прототип, проверка на примерах",
+        "timeline": "Три недели",
+        "prototypeUrl": "https://example.org/prototype",
+        "decision": "selected",
+        "createdAt": "2026-09-23T08:52:01.785302Z"
+      },
+      {
+        "id": "ba6d2841-173d-4ce0-9cb6-9126dfb2f84d",
+        "taskId": "3471a462-e428-4cf0-9c74-00d98b608fd6",
+        "teamId": "00000000-0000-0000-0000-0000000007d4",
+        "idea": "Панель очереди заявок",
+        "plan": "Интервью, прототип, проверка на примерах",
+        "timeline": "Три недели",
+        "prototypeUrl": "https://example.org/prototype",
+        "decision": "selected",
+        "createdAt": "2026-09-23T08:52:01.794173Z"
+      }
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/tasks/00000000-0000-0000-0000-0000000003ec/proposals",
+    "request": {
+      "teamId": "00000000-0000-0000-0000-0000000007d2",
+      "idea": "Уточнить процесс",
+      "plan": "Провести интервью",
+      "timeline": "Неделя",
+      "prototypeUrl": ""
+    },
+    "status": 201,
+    "response": {
+      "id": "c413984e-319d-47b4-b46c-a97df14fa4e5",
+      "taskId": "00000000-0000-0000-0000-0000000003ec",
+      "teamId": "00000000-0000-0000-0000-0000000007d2",
+      "idea": "Уточнить процесс",
+      "plan": "Провести интервью",
+      "timeline": "Неделя",
+      "prototypeUrl": "",
+      "decision": "pending",
+      "createdAt": "2026-09-23T08:52:01.804562Z"
+    }
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/proposals/c413984e-319d-47b4-b46c-a97df14fa4e5",
+    "request": {
+      "decision": "rejected"
+    },
+    "status": 200,
+    "response": {
+      "id": "c413984e-319d-47b4-b46c-a97df14fa4e5",
+      "taskId": "00000000-0000-0000-0000-0000000003ec",
+      "teamId": "00000000-0000-0000-0000-0000000007d2",
+      "idea": "Уточнить процесс",
+      "plan": "Провести интервью",
+      "timeline": "Неделя",
+      "prototypeUrl": "",
+      "decision": "rejected",
+      "createdAt": "2026-09-23T08:52:01.804562Z"
+    }
+  }
+]
