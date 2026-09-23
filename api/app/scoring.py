@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import unicodedata
 from typing import Any
 
 PLACEHOLDERS = {
@@ -19,21 +20,52 @@ PLACEHOLDERS = {
     "не указано",
     "уточнить",
     "placeholder",
+    "test",
+    "test text",
+    "тест",
+    "тестовый текст",
+    "заглушка",
+    "lorem ipsum",
+    "lorem ipsum dolor sit amet",
     "...",
     "-",
 }
 
+# Only recognizable keyboard filler is rejected; there is no language dictionary
+# or minimum word count that could penalize short facts, names, or abbreviations.
+KEYBOARD_FILLER = {
+    "qwerty",
+    "qwertyuiop",
+    "asdf",
+    "asdfgh",
+    "asdfghjkl",
+    "zxcv",
+    "zxcvbnm",
+    "йцукен",
+    "йцукенгшщзхъ",
+    "фыва",
+    "фывапролджэ",
+    "ячсм",
+    "ячсмитьбю",
+}
+FILLER_WORDS = {word for word in PLACEHOLDERS if " " not in word} | KEYBOARD_FILLER
+
 
 def is_meaningful(value: str) -> bool:
-    """Return whether a field contains useful information rather than a placeholder."""
-    raw = str(value or "").casefold().strip()
-    normalized = re.sub(r"[^\w]+", " ", raw, flags=re.UNICODE).strip()
-    return (
-        bool(normalized)
-        and raw not in PLACEHOLDERS
-        and normalized not in PLACEHOLDERS
-        and len(normalized) > 1
-    )
+    """Exclude obvious filler, without claiming to judge a fact's truth or relevance."""
+    raw = unicodedata.normalize("NFKC", str(value or "")).casefold()
+    # Ignore invisible formatting characters when identifying a placeholder.
+    raw = "".join(char for char in raw if unicodedata.category(char) != "Cf")
+    normalized = re.sub(r"[\W_]+", " ", raw, flags=re.UNICODE).strip()
+    if len(normalized) < 2 or normalized in PLACEHOLDERS:
+        return False
+    words = normalized.split()
+    if all(word in FILLER_WORDS for word in words):
+        return False
+    letters = "".join(words)
+    if len(letters) >= 4 and letters.isalpha() and len(set(letters)) == 1:
+        return False
+    return True
 
 
 # Each visible item is scored independently; combined categories retain their contract totals.

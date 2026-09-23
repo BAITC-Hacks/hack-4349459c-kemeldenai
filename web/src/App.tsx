@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react'
+import { transferClarificationAnswers } from './clarificationAnswers'
 import { api } from './api'
 import { useBookmarks } from './bookmarks'
 import { MyApplications } from './MyApplications'
@@ -205,7 +206,7 @@ function App() {
   const [search, setSearch] = useState('')
   const [studentPage, setStudentPage] = useState<'catalog' | 'applications'>('catalog')
   const [savedOnly, setSavedOnly] = useState(false)
-  const [catalogSort, setCatalogSort] = useState('recommended')
+  const [catalogSort, setCatalogSort] = useState('priority')
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false)
   const proposalDraftStorage = useProposalDrafts()
   const proposalDrafts = proposalDraftStorage.drafts
@@ -407,6 +408,11 @@ function App() {
   async function analyze() {
     setBuilderError('')
     setNotice('')
+    if (hasUnappliedAnswers) {
+      setStep('questions')
+      setNotice('У вас есть ответы на предыдущие вопросы. Перенесите их в карточку перед новым уточнением — так они сохранятся.')
+      return
+    }
     if (card.description.trim().length < 8) {
       setFieldErrors({ description: 'Опишите задачу: минимум 8 символов.' })
       goToField('description')
@@ -432,20 +438,7 @@ function App() {
   }
 
   function applyAnswers() {
-    setCard((current) => {
-      const next = { ...current }
-      questions.forEach((item, index) => {
-        const answer = answers[index]?.trim()
-        if (!answer) return
-        if (CARD_FIELDS.includes(item.field as CardField)) {
-          const field = item.field as CardField
-          next[field] = next[field].trim() ? `${next[field].trim()}\n${answer}` : answer
-        } else {
-          next.description = `${next.description.trim()}\n${answer}`.trim()
-        }
-      })
-      return next
-    })
+    setCard((current) => transferClarificationAnswers(current, questions, answers))
     setAnswers({})
     setClarificationReviewed(true)
     setStep('review')
@@ -518,6 +511,7 @@ function App() {
     try {
       const next = await api.publishTask(task.id)
       keepTask(next)
+      setBusinessTaskId(next.id)
       setPublicationComplete(true)
       void refreshCatalog()
     } catch (error) {
@@ -557,7 +551,7 @@ function App() {
     saveDemoPersona(next)
     setPersona(next)
     setBusinessPage(task?.status === 'published' ? 'responses' : 'builder')
-    if (task?.status === 'published') void refreshCatalog()
+    if (task?.status === 'published') { setBusinessTaskId(task.id); void refreshCatalog() }
   }
 
   function enterStudent(teamId: string) {
@@ -740,7 +734,7 @@ function App() {
                       {step === 'description' && <><button className="button button--text" type="button" disabled={fieldsDisabled} onClick={() => setStep('review')}>Заполнить самостоятельно</button><button className="button button--dark" type="button" disabled={fieldsDisabled} onClick={() => void analyze()}><BusyLabel busy={builderAction === 'analyze'} idle="Получить вопросы" pending="Готовим вопросы…" /> <ArrowIcon /></button></>}
                       {step === 'questions' && <button className="button button--dark" type="button" disabled={fieldsDisabled} onClick={applyAnswers}>{Object.values(answers).some((value) => value.trim()) ? 'Перенести ответы и продолжить' : 'Продолжить без ответов'} <ArrowIcon /></button>}
                       {step === 'review' && <button className="button button--dark" type="button" onClick={() => void confirm()} disabled={fieldsDisabled}><BusyLabel busy={builderAction === 'confirm'} idle={task?.confirmedAt ? 'Подтвердить изменения' : 'Подтвердить карточку'} pending="Подтверждаем…" /> <ArrowIcon /></button>}
-                      {step === 'publish' && <><button className="button button--outline" type="button" disabled={fieldsDisabled} onClick={() => setStep('review')}>Редактировать карточку</button>{task?.status !== 'published' ? <button className="button button--accent" type="button" onClick={() => void publish()} aria-describedby="publish-help" disabled={fieldsDisabled || !publishReady}><BusyLabel busy={builderAction === 'publish'} idle="Опубликовать" pending="Публикуем…" /> <ArrowIcon /></button> : <button className="button button--dark" type="button" onClick={() => { changeParticipant(); setSelectedTaskId(task.id); setSearch(''); setTopicFilter(''); setReadinessFilter(''); setMobileDetailOpen(true); void refreshCatalog() }}>Открыть как команда <ArrowIcon /></button>}</>}
+                      {step === 'publish' && <><button className="button button--outline" type="button" disabled={fieldsDisabled} onClick={() => setStep('review')}>Редактировать карточку</button>{task?.status !== 'published' ? <button className="button button--accent" type="button" onClick={() => void publish()} aria-describedby="publish-help" disabled={fieldsDisabled || !publishReady}><BusyLabel busy={builderAction === 'publish'} idle="Опубликовать" pending="Публикуем…" /> <ArrowIcon /></button> : <button className="button button--dark" type="button" onClick={() => { changeParticipant(); setSavedOnly(false); setCatalogSort('priority'); setSelectedTaskId(task.id); setSearch(''); setTopicFilter(''); setReadinessFilter(''); setMobileDetailOpen(true); void refreshCatalog() }}>Открыть как команда <ArrowIcon /></button>}</>}
                     </div>
                     {savedFeedback && <p className="save-receipt" role="status">{hasUnappliedAnswers ? 'Карточка сохранена. Ответы на вопросы нужно отдельно перенести в карточку и сохранить.' : 'Черновик сохранён. Команды увидят задачу только после публикации.'}</p>}
                     {step === 'publish' && task?.status !== 'published' && <p id="publish-help" className="builder-actionbar__help">{publishReady ? 'После публикации задачу увидят все команды.' : 'Сначала подтвердите текущую версию карточки.'}</p>}
@@ -775,7 +769,7 @@ function App() {
             )}
           </>
         ) : studentPage === 'applications' && activeTeam ? (
-          <MyApplications key={activeTeam.id} teamId={activeTeam.id} onRefreshTeam={() => void refreshTeams()} onOpenTask={(id) => { setStudentPage('catalog'); setSavedOnly(false); setSearch(''); setTopicFilter(''); setReadinessFilter(''); openTask(id); void refreshCatalog() }} />
+          <MyApplications key={activeTeam.id} teamId={activeTeam.id} onRefreshTeam={() => void refreshTeams()} onOpenTask={(id) => { setStudentPage('catalog'); setSavedOnly(false); setCatalogSort('priority'); setSearch(''); setTopicFilter(''); setReadinessFilter(''); openTask(id); void refreshCatalog() }} />
         ) : (
           <section className={`catalog ${mobileDetailOpen && selectedTask ? 'catalog--detail-open' : ''}`} aria-labelledby="catalog-title">
             <div className="catalog__toolbar"><div><p className="eyebrow">ОТКРЫТЫЙ КАТАЛОГ</p><h2 id="catalog-title">Задачи для команд <span>{visibleTasks.length}</span></h2></div><button className="button button--outline" type="button" disabled={catalogLoading} onClick={() => void refreshCatalog()}><BusyLabel busy={catalogLoading} idle="Обновить" pending="Обновляем…" /></button></div>
@@ -784,7 +778,7 @@ function App() {
             {savedOnly && bookmarks.loading && <p role="status">Загружаем сохранённые задачи…</p>}
             {savedOnly && !bookmarks.loading && !bookmarks.error && !bookmarks.ids.length && <p className="state-message">Пока нет сохранённых задач. Нажмите «Сохранить задачу» на карточке — она появится здесь. Список общий для вашей демо-команды.</p>}
             {activeTeam && <RecommendationFocus key={activeTeam.id} team={activeTeam} onSaved={(updated) => setTeams((current) => current.map((item) => item.id === updated.id ? updated : item))} onReset={recommendations.refresh} />}
-            <div className="filters"><TextInput label="Поиск задач" value={search} onChange={(value) => { setSearch(value); setMobileDetailOpen(false) }} placeholder="Название, отрасль или ключевое слово" /><label className="field"><span className="field__label">Тема</span><select value={topicFilter} onChange={(event) => { setTopicFilter(event.target.value); setMobileDetailOpen(false) }}><option value="">Все темы</option>{topics.map((topic) => <option value={topic} key={topic}>{topic}</option>)}</select></label><label className="field"><span className="field__label">Готовность</span><select value={readinessFilter} onChange={(event) => { setReadinessFilter(event.target.value); setMobileDetailOpen(false) }}><option value="">Любая готовность</option><option value="draft">Требует уточнения · 0–39</option><option value="workable">Рабочая · 40–69</option><option value="ready">Готовая · 70–89</option><option value="priority">Приоритетная · 90–100</option></select></label><label className="field"><span className="field__label">Сортировка</span><select value={catalogSort} onChange={(event) => setCatalogSort(event.target.value)}><option value="recommended">Рекомендуемые команде</option><option value="priority">По приоритету</option></select></label>{(search || topicFilter || readinessFilter) && <button className="button button--text filters__reset" type="button" onClick={() => { setSearch(''); setTopicFilter(''); setReadinessFilter(''); setMobileDetailOpen(false) }}>Сбросить фильтры</button>}</div>
+            <div className="filters"><TextInput label="Поиск задач" value={search} onChange={(value) => { setSearch(value); setMobileDetailOpen(false) }} placeholder="Название, отрасль или ключевое слово" /><label className="field"><span className="field__label">Тема</span><select value={topicFilter} onChange={(event) => { setTopicFilter(event.target.value); setMobileDetailOpen(false) }}><option value="">Все темы</option>{topics.map((topic) => <option value={topic} key={topic}>{topic}</option>)}</select></label><label className="field"><span className="field__label">Готовность</span><select value={readinessFilter} onChange={(event) => { setReadinessFilter(event.target.value); setMobileDetailOpen(false) }}><option value="">Любая готовность</option><option value="draft">Требует уточнения · 0–39</option><option value="workable">Рабочая · 40–69</option><option value="ready">Готовая · 70–89</option><option value="priority">Приоритетная · 90–100</option></select></label><label className="field"><span className="field__label">Сортировка</span><select value={catalogSort} onChange={(event) => setCatalogSort(event.target.value)}><option value="priority">По рейтингу готовности</option><option value="recommended">Рекомендуемые команде</option></select></label>{(search || topicFilter || readinessFilter) && <button className="button button--text filters__reset" type="button" onClick={() => { setSearch(''); setTopicFilter(''); setReadinessFilter(''); setMobileDetailOpen(false) }}>Сбросить фильтры</button>}</div>
             {recommendations.feedbackError && <p className="error-message" role="alert">{recommendations.feedbackError}</p>}
             {recommendations.items.some((item) => item.dismissed) && <details className="dismissed-tasks"><summary>Неинтересные задачи ({recommendations.items.filter((item) => item.dismissed).length})</summary><p>Скрыты только из рекомендаций. Они доступны в сохранённых и при сортировке по приоритету.</p>{recommendations.items.filter((item) => item.dismissed).map((item) => <div key={item.taskId}><span>{tasks.find((task) => task.id === item.taskId)?.title || 'Задача'}</span><button type="button" className="button button--text" disabled={recommendations.feedbackBusy} onClick={() => void recommendations.dismiss(item.taskId, false)}>Вернуть в рекомендации</button></div>)}</details>}
             {catalogSort === 'recommended' && recommendations.loading && <p role="status">Подбираем рекомендации…</p>}

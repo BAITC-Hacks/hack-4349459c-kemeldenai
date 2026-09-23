@@ -12,9 +12,9 @@ npm ci
 npm run dev
 ```
 
-Open the local URL printed by Vite. Run `npm run build` for TypeScript and production-bundle validation. For a separately hosted API, set `VITE_API_BASE_URL` to its origin before building and configure the API to allow that origin; do not put API keys in Vite environment variables.
+Open the local URL printed by Vite. Run `npm test` for the focused logic tests (verified with Node 25.6; requires native TypeScript stripping), and `npm run build` for TypeScript and production-bundle validation. For a separately hosted API, set `VITE_API_BASE_URL` to its origin before building and configure the API to allow that origin; do not put API keys in Vite environment variables.
 
-The frontend calls only endpoints in [the shared contract](../docs/MAIN_TASK.md). Request/response types live in `src/types.ts`, and all HTTP calls live in `src/api.ts`. Until Agent A's API is running, the UI displays a connection error rather than substituting fake catalog data.
+The frontend uses [the core contract](../docs/MAIN_TASK.md) plus the [application history](../docs/STUDENT_APPLICATIONS.md) and [recommendation](../docs/RECOMMENDATIONS.md) extensions. Request/response types live in `src/types.ts`, and all HTTP calls live in `src/api.ts`. When the API is unavailable, the UI displays a connection error rather than substituting fake catalog data.
 
 ## Demo path
 
@@ -31,9 +31,9 @@ Review screenshots with synthetic data: [demo entry desktop](screenshots/demo-en
 
 The business builder separates description, clarification, card review, and publication. A sticky action bar shows the current step, unsaved state, and the relevant action. Clarification can be skipped for manual entry. Saving a draft does not confirm it; publication always requires the current card to be confirmed. The publication preview and rating show the last confirmed version, with an explanation when edits are pending. Missing readiness fields link back to their inputs.
 
-Starting a new task asks before discarding unsaved card content or unanswered clarification work. A browser unload warning also covers unsaved card content, clarification answers, and proposal drafts. These drafts are kept in memory, not autosaved; saved task IDs are restored from local storage as before.
+Starting a new task asks before discarding unsaved card content or unanswered clarification work. Regenerating questions returns to pending answers until they are transferred; transferring an identical answer block again does not duplicate it after whitespace normalization. Unsaved business card content and clarification answers remain in memory and trigger an unload warning; saved task IDs are restored from local storage. Student proposal drafts are automatically stored in this browser separately for each team and task, with a warning if storage fails.
 
-The student catalog includes keyword search, topic/readiness filters, and a reset control. At widths of 820px or below, selecting a task opens its details in place of the list, with a back button. Proposal drafts are retained separately for each team and task during the session. Required fields show inline errors, focus moves to the first invalid field, and successful submission is confirmed beside the form.
+The student catalog defaults to all published tasks in descending readiness order, including low-rated or dismissed tasks. Recommendation sorting is optional; dismissals only hide tasks in that view. Opening a task from application history returns to the full catalog and selects that task. Keyword search, topic/readiness filters, and a reset control remain available. At widths of 820px or below, selecting a task opens its details in place of the list, with a back button. Required proposal fields show inline errors, focus moves to the first invalid field, and successful submission is confirmed beside the form.
 
 ### Browser regression checks
 
