@@ -540,3 +540,11 @@ fieldset:disabled { opacity: .7; }
 .dismissed-tasks { padding: 16px; margin: 16px 0; background: var(--color-surface-muted); border-radius: 10px; }
 .dismissed-tasks summary { cursor: pointer; font-weight: 700; }
 .dismissed-tasks > div { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.proposal-assistant { margin: 18px 0; padding: 18px; border: 1px solid var(--color-border); background: var(--color-surface-muted); border-radius: 12px; }
+.proposal-assistant summary { font-weight: 700; color: #175b49; cursor: pointer; padding: 6px 0; }
+.proposal-assistant p { font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
+.assistant-brief { border-left: 3px solid #92b9a9; padding-left: 14px; margin: 16px 0; }
+.assistant-preview { border: 0; padding: 0; margin-top: 20px; min-width: 0; }
+.assistant-preview legend { font-weight: 700; padding: 0; }
+.assistant-select { display: flex; align-items: center; gap: 8px; font-size: 13px; margin: 14px 0 8px; }
+.assistant-select input { width: 18px; height: 18px; flex: 0 0 18px; }
