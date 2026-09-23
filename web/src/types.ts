@@ -32,7 +32,7 @@ export interface TaskCard extends EditableCard {
   id: string
   status: TaskStatus
   confirmedAt: string | null
-  score: number
+  score: number | null
   readiness: Readiness
   breakdown: ScorePart[]
   missing: string[]
