@@ -565,3 +565,10 @@ fieldset:disabled { opacity: .7; }
 .rank-ladder li[aria-current="step"] { background: #e3f2eb; border-color: #278a72; }
 .team-rank--compact { background: var(--color-surface-muted); }
 .persona-header .rank-badge { font-size: 11px; }
+.suggestion-list { display: grid; gap: 12px; margin: 0 0 24px; }
+.suggestion-list h3, .suggestion-list p { margin: 0; }
+.suggestion-card { display: grid; gap: 10px; padding: 16px; border: 1px solid #bfded0; border-radius: 12px; background: #f3faf6; }
+.suggestion-card strong { color: #175b49; }
+.suggestion-evidence { color: #526c62; font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
+.suggestion-card textarea { width: 100%; min-height: 72px; padding: 12px; border: 1px solid var(--color-border); border-radius: 8px; font: inherit; resize: vertical; }
+.suggestion-actions { display: flex; flex-wrap: wrap; gap: 8px; }

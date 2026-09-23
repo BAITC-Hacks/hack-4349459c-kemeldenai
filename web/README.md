@@ -4,7 +4,7 @@ Russian-language React/Vite/TypeScript UI for demo participant entry, the busine
 
 ## Run
 
-Use Node.js 20.19+ or 22.12+. Start the root PostgreSQL Compose service and Agent A's FastAPI server first. The Vite dev server proxies `/api` to `http://127.0.0.1:8000`.
+Use Node.js 20.19+ or 22.12+. Start the root PostgreSQL Compose service and FastAPI server first. The Vite dev server proxies `/api` to `http://127.0.0.1:8000` by default; set `API_PROXY_TARGET` for another local API port.
 
 ```sh
 cd web
@@ -12,14 +12,14 @@ npm ci
 npm run dev
 ```
 
-Open the local URL printed by Vite. Run `npm run build` for TypeScript and production-bundle validation. For a separately hosted API, set `VITE_API_BASE_URL` to its origin before building and configure the API to allow that origin; do not put API keys in Vite environment variables.
+Open the local URL printed by Vite. Run `npm test` for the focused logic tests (verified with Node 25.6; requires native TypeScript stripping), and `npm run build` for TypeScript and production-bundle validation. For a separately hosted API, set `VITE_API_BASE_URL` to its origin before building and configure the API to allow that origin; do not put API keys in Vite environment variables.
 
-The frontend calls only endpoints in [the shared contract](../docs/MAIN_TASK.md). Request/response types live in `src/types.ts`, and all HTTP calls live in `src/api.ts`. Until Agent A's API is running, the UI displays a connection error rather than substituting fake catalog data.
+The frontend uses [the core contract](../docs/MAIN_TASK.md) plus the [AI task assistant](../docs/AI_REQUIREMENTS.md), [application history](../docs/STUDENT_APPLICATIONS.md), and [recommendation](../docs/RECOMMENDATIONS.md) extensions. Request/response types live in `src/types.ts`, and all HTTP calls live in `src/api.ts`. When the API is unavailable, the UI displays a connection error rather than substituting fake catalog data.
 
 ## Demo path
 
 1. On **Демо-вход**, choose the prefilled business profile. Enter a short description and request clarification questions.
-2. Answer at least three questions, transfer answers to the editable card, and confirm it. Add more detail and confirm again to show the rating increase.
+2. Answer at least three questions; optionally refresh them without losing typed answers. Transfer answers, review any evidence-backed field suggestions, and confirm the editable card. Add more detail and confirm again to show the rating increase.
 3. Publish the task. Choose **Сменить участника** and enter as a seeded student team (Data Nomads is preselected). Find the task and submit an idea, plan, timeline, and HTTP(S) prototype link. The active team is attached automatically.
 4. Return as business, manually select or reject the proposal, and confirm one completed stage for a selected team. The stage awards 10 progress points once; the student team sees its updated total after switching back.
 
@@ -31,15 +31,16 @@ Review screenshots with synthetic data: [demo entry desktop](screenshots/demo-en
 
 The business builder separates description, clarification, card review, and publication. A sticky action bar shows the current step, unsaved state, and the relevant action. Clarification can be skipped for manual entry. Saving a draft does not confirm it; publication always requires the current card to be confirmed. The publication preview and rating show the last confirmed version, with an explanation when edits are pending. Missing readiness fields link back to their inputs.
 
-Starting a new task asks before discarding unsaved card content or unanswered clarification work. A browser unload warning also covers unsaved card content, clarification answers, and proposal drafts. These drafts are kept in memory, not autosaved; saved task IDs are restored from local storage as before.
+Starting a new task asks before discarding unsaved card content or unanswered clarification work. Regenerating questions preserves typed answers by their target fields and retains their answered questions. Transferring an identical answer block again does not duplicate it after line-by-line whitespace normalization. Evidence-backed suggestions appear for human accept, edit, or discard and never automatically overwrite a nonempty card field. Unsaved business card content and clarification answers remain in memory and trigger an unload warning; saved task IDs are restored from local storage. Student proposal drafts are automatically stored in this browser separately for each team and task, with a warning if storage fails.
 
-The student catalog includes keyword search, topic/readiness filters, and a reset control. At widths of 820px or below, selecting a task opens its details in place of the list, with a back button. Proposal drafts are retained separately for each team and task during the session. Required fields show inline errors, focus moves to the first invalid field, and successful submission is confirmed beside the form.
+The student catalog defaults to all published tasks in descending readiness order, including low-rated or dismissed tasks. Recommendation sorting is optional; dismissals only hide tasks in that view. Opening a task from application history returns to the full catalog and selects that task. Keyword search, topic/readiness filters, and a reset control remain available. At widths of 820px or below, selecting a task opens its details in place of the list, with a back button. Required proposal fields show inline errors, focus moves to the first invalid field, and successful submission is confirmed beside the form.
 
 ### Browser regression checks
 
 Use a separate seeded test database when another test run is active. Verify:
 
 - Blank description/title validation focuses the missing input; clarification answers transfer into the right fields.
+- Refreshing questions preserves typed answers and answered questions; repeated transfer skips equivalent multiline blocks. Suggestion evidence is visible, editing and discarding work, and accepting does not overwrite an existing field or change the score before confirmation.
 - A new task is not scored until confirmation. A low-rated confirmed task can still publish.
 - Missing-field links focus inputs; unconfirmed edits keep the old rating and disable publication with an explanation.
 - New-task protection preserves entered work when cancelled. Saving a draft and reopening it preserves saved fields.

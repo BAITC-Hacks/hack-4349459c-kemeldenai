@@ -1,4 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react'
+import { transferClarificationAnswers } from './clarificationAnswers'
+import { reconcileTaskSuggestions, removeSuggestionEdit } from './taskSuggestions'
 import { api } from './api'
 import { TeamRank, RankBadge } from './TeamRank'
 import { useBookmarks } from './bookmarks'
@@ -22,6 +24,7 @@ import {
   type Milestone,
   type Proposal,
   type ProposalInput,
+  type SuggestedField,
   type TaskCard,
   type Team,
 } from './types'
@@ -191,9 +194,12 @@ function App() {
   const [card, setCard] = useState<EditableCard>({ ...EMPTY_CARD })
   const [task, setTask] = useState<TaskCard | null>(null)
   const [questions, setQuestions] = useState<ClarifyingQuestion[]>([])
-  const [questionSource, setQuestionSource] = useState<'ai' | 'fallback' | null>(null)
+  const [questionSource, setQuestionSource] = useState<'ai' | 'mixed' | 'fallback' | null>(null)
+  const [suggestions, setSuggestions] = useState<SuggestedField[]>([])
+  const [suggestionEdits, setSuggestionEdits] = useState<Record<string, string>>({})
+  const [suggestionNotice, setSuggestionNotice] = useState('')
   const [clarificationReviewed, setClarificationReviewed] = useState(false)
-  const [answers, setAnswers] = useState<Record<number, string>>({})
+  const [answers, setAnswers] = useState<Record<string, string>>({})
   const [builderAction, setBuilderAction] = useState<BuilderAction | null>(null)
   const builderBusy = builderAction !== null
   const [step, setStep] = useState<BuilderStep>('description')
@@ -206,7 +212,7 @@ function App() {
   const [search, setSearch] = useState('')
   const [studentPage, setStudentPage] = useState<'catalog' | 'applications'>('catalog')
   const [savedOnly, setSavedOnly] = useState(false)
-  const [catalogSort, setCatalogSort] = useState('recommended')
+  const [catalogSort, setCatalogSort] = useState('priority')
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false)
   const proposalDraftStorage = useProposalDrafts()
   const proposalDrafts = proposalDraftStorage.drafts
@@ -420,11 +426,18 @@ function App() {
         throw new Error('Сервер вернул меньше трёх вопросов. Повторите попытку.')
       }
       setStep('questions')
-      setQuestions(result.questions)
+      setQuestions((current) => {
+        const answered = current.filter((item) => answers[item.field]?.trim())
+        return [...answered, ...result.questions.filter((item) => !answered.some((old) => old.field === item.field))].slice(0, 5)
+      })
+      const incoming = Array.isArray(result.suggestedFields) ? result.suggestedFields : []
+      const refreshedSuggestions = reconcileTaskSuggestions(suggestions, incoming, suggestionEdits)
+      setSuggestions(refreshedSuggestions.suggestions)
+      setSuggestionEdits(refreshedSuggestions.edits)
+      setSuggestionNotice('')
       setClarificationReviewed(false)
       setQuestionSource(result.source)
-      setAnswers({})
-      setNotice('Вопросы готовы. Ответы можно перенести в редактируемую карточку.')
+      setNotice('Вопросы готовы. Ответы и предложения можно проверить перед подтверждением карточки.')
     } catch (error) {
       setBuilderError(errorMessage(error))
     } finally {
@@ -433,24 +446,31 @@ function App() {
   }
 
   function applyAnswers() {
-    setCard((current) => {
-      const next = { ...current }
-      questions.forEach((item, index) => {
-        const answer = answers[index]?.trim()
-        if (!answer) return
-        if (CARD_FIELDS.includes(item.field as CardField)) {
-          const field = item.field as CardField
-          next[field] = next[field].trim() ? `${next[field].trim()}\n${answer}` : answer
-        } else {
-          next.description = `${next.description.trim()}\n${answer}`.trim()
-        }
-      })
-      return next
-    })
+    setCard((current) => transferClarificationAnswers(current, questions, answers))
     setAnswers({})
     setClarificationReviewed(true)
     setStep('review')
     setNotice('Ответы перенесены. Проверьте карточку перед подтверждением.')
+  }
+
+  function acceptSuggestion(suggestion: SuggestedField) {
+    const value = (suggestionEdits[suggestion.field] ?? suggestion.value).trim()
+    if (!value) {
+      setSuggestionNotice('Введите текст предложения или отклоните его.')
+      return
+    }
+    if (card[suggestion.field].trim()) {
+      setSuggestionNotice(`Поле «${fieldLabels[suggestion.field]}» уже заполнено. Проверьте его вручную.`)
+      return
+    }
+    setCard((current) => ({ ...current, [suggestion.field]: value }))
+    dismissSuggestion(suggestion.field)
+    setSuggestionNotice(`Предложение добавлено в поле «${fieldLabels[suggestion.field]}». Проверьте его перед подтверждением.`)
+  }
+
+  function dismissSuggestion(field: CardField) {
+    setSuggestions((current) => current.filter((item) => item.field !== field))
+    setSuggestionEdits((current) => removeSuggestionEdit(current, field))
   }
 
   function keepTask(next: TaskCard) {
@@ -519,6 +539,7 @@ function App() {
     try {
       const next = await api.publishTask(task.id)
       keepTask(next)
+      setBusinessTaskId(next.id)
       setPublicationComplete(true)
       void refreshCatalog()
     } catch (error) {
@@ -544,6 +565,9 @@ function App() {
     setTask(null)
     setCard({ ...EMPTY_CARD })
     setQuestions([])
+    setSuggestions([])
+    setSuggestionEdits({})
+    setSuggestionNotice('')
     setClarificationReviewed(false)
     setAnswers({})
     setBuilderError('')
@@ -558,7 +582,7 @@ function App() {
     saveDemoPersona(next)
     setPersona(next)
     setBusinessPage(task?.status === 'published' ? 'responses' : 'builder')
-    if (task?.status === 'published') void refreshCatalog()
+    if (task?.status === 'published') { setBusinessTaskId(task.id); void refreshCatalog() }
   }
 
   function enterStudent(teamId: string) {
@@ -707,14 +731,17 @@ function App() {
                   {step === 'questions' && questions.length > 0 && <section className="work-section work-section--questions step-panel" aria-labelledby="questions-title">
                     <div className="section-heading"><span className="section-heading__number">02</span><div><h2 ref={stepHeading} tabIndex={-1} id="questions-title">Что стоит уточнить</h2><p>Ответы останутся редактируемыми перед подтверждением карточки.</p></div></div>
                     <div className="question-list">
-                      {questions.map((item, index) => <label className="question" key={`${item.field}-${index}`}><span className="question__number">{String(index + 1).padStart(2, '0')}</span><span className="question__body"><span className="question__title">{item.question}</span><textarea disabled={fieldsDisabled} rows={2} value={answers[index] ?? ''} onChange={(event) => setAnswers((current) => ({ ...current, [index]: event.target.value }))} placeholder="Ваш ответ" /></span></label>)}
+                      {questions.map((item, index) => <label className="question" key={item.field}><span className="question__number">{String(index + 1).padStart(2, '0')}</span><span className="question__body"><span className="question__title">{item.question}</span><textarea disabled={fieldsDisabled} rows={2} value={answers[item.field] ?? ''} onChange={(event) => setAnswers((current) => ({ ...current, [item.field]: event.target.value }))} placeholder="Ваш ответ" /></span></label>)}
                     </div>
-                    <p className="muted question-source">{questionSource === 'fallback' ? 'AI сейчас недоступен. Мы подготовили стандартные вопросы — вы можете продолжить.' : 'Вопросы подготовлены AI. Проверьте ответы перед переносом в карточку.'}</p>
+                    <p className="muted question-source">{questionSource === 'fallback' ? 'AI сейчас недоступен. Мы подготовили стандартные вопросы — вы можете продолжить.' : questionSource === 'mixed' ? 'AI подготовил часть анализа; недостающие вопросы добавлены автоматически. Проверьте ответы перед переносом.' : 'Вопросы подготовлены AI. Проверьте ответы перед переносом в карточку.'}</p>
+                    <button className="button button--text" type="button" disabled={fieldsDisabled} onClick={() => void analyze()}>Обновить вопросы, сохранив ответы</button>
                   </section>}
 
                   {step === 'review' && <section className="work-section step-panel" aria-labelledby="review-title">
                     <fieldset disabled={fieldsDisabled}>
                     <div className="section-heading"><span className="section-heading__number">03</span><div><h2 ref={stepHeading} tabIndex={-1} id="review-title">Карточка задачи</h2><p>Проверьте каждое поле. Баллы начисляются после вашего подтверждения.</p></div></div>
+                    {suggestions.length > 0 && <div className="suggestion-list" aria-label="Предложения для карточки"><h3>Предложения из вашего описания</h3><p className="muted">Проверьте источник и при необходимости измените текст. Пустое поле заполнится только после вашего выбора.</p>{suggestions.map((suggestion) => <div className="suggestion-card" key={suggestion.field}><strong>{fieldLabels[suggestion.field]}</strong><p className="suggestion-evidence">Источник: «{suggestion.evidence}»</p><textarea aria-label={`Предложение для поля ${fieldLabels[suggestion.field]}`} rows={2} value={suggestionEdits[suggestion.field] ?? suggestion.value} onChange={(event) => setSuggestionEdits((current) => ({ ...current, [suggestion.field]: event.target.value }))} /><div className="suggestion-actions"><button type="button" className="button button--outline" onClick={() => acceptSuggestion(suggestion)}>Добавить в карточку</button><button type="button" className="button button--text" onClick={() => dismissSuggestion(suggestion.field)}>Отклонить</button></div></div>)}</div>}
+                    {suggestionNotice && <p className="inline-note" role="status">{suggestionNotice}</p>}
                     <TextInput id="card-title" error={fieldErrors.title} label="Название задачи" value={card.title} onChange={(value) => updateCard('title', value)} placeholder={fieldHints.title} required />
                     <div className="two-columns">
                       {(['context', 'need', 'users', 'dataMaterials', 'constraints', 'expectedResult', 'successCriteria', 'contact', 'interaction'] as CardField[]).map((field) => <Field key={field} id={`card-${field}`} label={fieldLabels[field]} value={card[field]} onChange={(value) => updateCard(field, value)} hint={fieldHints[field]} />)}
@@ -741,7 +768,7 @@ function App() {
                       {step === 'description' && <><button className="button button--text" type="button" disabled={fieldsDisabled} onClick={() => setStep('review')}>Заполнить самостоятельно</button><button className="button button--dark" type="button" disabled={fieldsDisabled} onClick={() => void analyze()}><BusyLabel busy={builderAction === 'analyze'} idle="Получить вопросы" pending="Готовим вопросы…" /> <ArrowIcon /></button></>}
                       {step === 'questions' && <button className="button button--dark" type="button" disabled={fieldsDisabled} onClick={applyAnswers}>{Object.values(answers).some((value) => value.trim()) ? 'Перенести ответы и продолжить' : 'Продолжить без ответов'} <ArrowIcon /></button>}
                       {step === 'review' && <button className="button button--dark" type="button" onClick={() => void confirm()} disabled={fieldsDisabled}><BusyLabel busy={builderAction === 'confirm'} idle={task?.confirmedAt ? 'Подтвердить изменения' : 'Подтвердить карточку'} pending="Подтверждаем…" /> <ArrowIcon /></button>}
-                      {step === 'publish' && <><button className="button button--outline" type="button" disabled={fieldsDisabled} onClick={() => setStep('review')}>Редактировать карточку</button>{task?.status !== 'published' ? <button className="button button--accent" type="button" onClick={() => void publish()} aria-describedby="publish-help" disabled={fieldsDisabled || !publishReady}><BusyLabel busy={builderAction === 'publish'} idle="Опубликовать" pending="Публикуем…" /> <ArrowIcon /></button> : <button className="button button--dark" type="button" onClick={() => { changeParticipant(); setSelectedTaskId(task.id); setSearch(''); setTopicFilter(''); setReadinessFilter(''); setMobileDetailOpen(true); void refreshCatalog() }}>Открыть как команда <ArrowIcon /></button>}</>}
+                      {step === 'publish' && <><button className="button button--outline" type="button" disabled={fieldsDisabled} onClick={() => setStep('review')}>Редактировать карточку</button>{task?.status !== 'published' ? <button className="button button--accent" type="button" onClick={() => void publish()} aria-describedby="publish-help" disabled={fieldsDisabled || !publishReady}><BusyLabel busy={builderAction === 'publish'} idle="Опубликовать" pending="Публикуем…" /> <ArrowIcon /></button> : <button className="button button--dark" type="button" onClick={() => { changeParticipant(); setSavedOnly(false); setCatalogSort('priority'); setSelectedTaskId(task.id); setSearch(''); setTopicFilter(''); setReadinessFilter(''); setMobileDetailOpen(true); void refreshCatalog() }}>Открыть как команда <ArrowIcon /></button>}</>}
                     </div>
                     {savedFeedback && <p className="save-receipt" role="status">{hasUnappliedAnswers ? 'Карточка сохранена. Ответы на вопросы нужно отдельно перенести в карточку и сохранить.' : 'Черновик сохранён. Команды увидят задачу только после публикации.'}</p>}
                     {step === 'publish' && task?.status !== 'published' && <p id="publish-help" className="builder-actionbar__help">{publishReady ? 'После публикации задачу увидят все команды.' : 'Сначала подтвердите текущую версию карточки.'}</p>}
@@ -777,7 +804,7 @@ function App() {
             )}
           </>
         ) : studentPage === 'applications' && activeTeam ? (
-          <MyApplications key={activeTeam.id} teamId={activeTeam.id} onRefreshTeam={() => void refreshTeams()} onOpenTask={(id) => { setStudentPage('catalog'); setSavedOnly(false); setSearch(''); setTopicFilter(''); setReadinessFilter(''); openTask(id); void refreshCatalog() }} />
+          <MyApplications key={activeTeam.id} teamId={activeTeam.id} onRefreshTeam={() => void refreshTeams()} onOpenTask={(id) => { setStudentPage('catalog'); setSavedOnly(false); setCatalogSort('priority'); setSearch(''); setTopicFilter(''); setReadinessFilter(''); openTask(id); void refreshCatalog() }} />
         ) : (
           <section className={`catalog ${mobileDetailOpen && selectedTask ? 'catalog--detail-open' : ''}`} aria-labelledby="catalog-title">
             <div className="catalog__toolbar"><div><p className="eyebrow">ОТКРЫТЫЙ КАТАЛОГ</p><h2 id="catalog-title">Задачи для команд <span>{visibleTasks.length}</span></h2></div><button className="button button--outline" type="button" disabled={catalogLoading} onClick={() => void refreshCatalog()}><BusyLabel busy={catalogLoading} idle="Обновить" pending="Обновляем…" /></button></div>
@@ -786,7 +813,7 @@ function App() {
             {savedOnly && bookmarks.loading && <p role="status">Загружаем сохранённые задачи…</p>}
             {savedOnly && !bookmarks.loading && !bookmarks.error && !bookmarks.ids.length && <p className="state-message">Пока нет сохранённых задач. Нажмите «Сохранить задачу» на карточке — она появится здесь. Список общий для вашей демо-команды.</p>}
             {activeTeam && <RecommendationFocus key={activeTeam.id} team={activeTeam} onSaved={(updated) => setTeams((current) => current.map((item) => item.id === updated.id ? updated : item))} onReset={recommendations.refresh} />}
-            <div className="filters"><TextInput label="Поиск задач" value={search} onChange={(value) => { setSearch(value); setMobileDetailOpen(false) }} placeholder="Название, отрасль или ключевое слово" /><label className="field"><span className="field__label">Тема</span><select value={topicFilter} onChange={(event) => { setTopicFilter(event.target.value); setMobileDetailOpen(false) }}><option value="">Все темы</option>{topics.map((topic) => <option value={topic} key={topic}>{topic}</option>)}</select></label><label className="field"><span className="field__label">Готовность</span><select value={readinessFilter} onChange={(event) => { setReadinessFilter(event.target.value); setMobileDetailOpen(false) }}><option value="">Любая готовность</option><option value="draft">Требует уточнения · 0–39</option><option value="workable">Рабочая · 40–69</option><option value="ready">Готовая · 70–89</option><option value="priority">Приоритетная · 90–100</option></select></label><label className="field"><span className="field__label">Сортировка</span><select value={catalogSort} onChange={(event) => setCatalogSort(event.target.value)}><option value="recommended">Рекомендуемые команде</option><option value="priority">По приоритету</option></select></label>{(search || topicFilter || readinessFilter) && <button className="button button--text filters__reset" type="button" onClick={() => { setSearch(''); setTopicFilter(''); setReadinessFilter(''); setMobileDetailOpen(false) }}>Сбросить фильтры</button>}</div>
+            <div className="filters"><TextInput label="Поиск задач" value={search} onChange={(value) => { setSearch(value); setMobileDetailOpen(false) }} placeholder="Название, отрасль или ключевое слово" /><label className="field"><span className="field__label">Тема</span><select value={topicFilter} onChange={(event) => { setTopicFilter(event.target.value); setMobileDetailOpen(false) }}><option value="">Все темы</option>{topics.map((topic) => <option value={topic} key={topic}>{topic}</option>)}</select></label><label className="field"><span className="field__label">Готовность</span><select value={readinessFilter} onChange={(event) => { setReadinessFilter(event.target.value); setMobileDetailOpen(false) }}><option value="">Любая готовность</option><option value="draft">Требует уточнения · 0–39</option><option value="workable">Рабочая · 40–69</option><option value="ready">Готовая · 70–89</option><option value="priority">Приоритетная · 90–100</option></select></label><label className="field"><span className="field__label">Сортировка</span><select value={catalogSort} onChange={(event) => setCatalogSort(event.target.value)}><option value="priority">По рейтингу готовности</option><option value="recommended">Рекомендуемые команде</option></select></label>{(search || topicFilter || readinessFilter) && <button className="button button--text filters__reset" type="button" onClick={() => { setSearch(''); setTopicFilter(''); setReadinessFilter(''); setMobileDetailOpen(false) }}>Сбросить фильтры</button>}</div>
             {recommendations.feedbackError && <p className="error-message" role="alert">{recommendations.feedbackError}</p>}
             {recommendations.items.some((item) => item.dismissed) && <details className="dismissed-tasks"><summary>Неинтересные задачи ({recommendations.items.filter((item) => item.dismissed).length})</summary><p>Скрыты только из рекомендаций. Они доступны в сохранённых и при сортировке по приоритету.</p>{recommendations.items.filter((item) => item.dismissed).map((item) => <div key={item.taskId}><span>{tasks.find((task) => task.id === item.taskId)?.title || 'Задача'}</span><button type="button" className="button button--text" disabled={recommendations.feedbackBusy} onClick={() => void recommendations.dismiss(item.taskId, false)}>Вернуть в рекомендации</button></div>)}</details>}
             {catalogSort === 'recommended' && recommendations.loading && <p role="status">Подбираем рекомендации…</p>}
