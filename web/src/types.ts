@@ -63,6 +63,7 @@ export interface Recommendation {
   taskId: string
   relevance: number
   reasons: string[]
+  dismissed: boolean
 }
 
 export type ProposalDecision = 'pending' | 'selected' | 'rejected'

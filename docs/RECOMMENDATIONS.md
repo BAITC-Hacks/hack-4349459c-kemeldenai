@@ -32,3 +32,12 @@ Recommendation failures fall back to readiness ordering with a retry action. Cli
 Neither model is installed in this baseline. Before adopting a trained model, collect impression context and stronger feedback such as proposals, then compare against this baseline using a chronological holdout, Recall@K/NDCG@K, and proposal conversion. Clicks alone carry position bias and do not prove task suitability. Keep a content fallback for new teams and tasks.
 
 Validation covers focus-based ranking, click-based reordering, isolation between teams, repeated-click deduplication, draft exclusion, invalid inputs, expiry, reset, and persistence across application restarts. The local browser check also verified the PostgreSQL click path and visible recommendation explanations.
+
+
+## Explicit recommendation controls
+
+The profile editor saves interests, skills, and technologies. Each list permits up to 12 nonblank entries of 80 characters, normalized and deduplicated without case sensitivity. Older API callers that omit skills/technologies preserve those fields.
+
+`PUT /api/teams/{teamId}/dismissals/{taskId}` marks a published task as not interesting; `DELETE` on the same path restores it. Both are idempotent. The new `task_dismissals` table persists these choices per demo team. Recommendation items include a `dismissed` boolean. The recommended catalog hides these tasks; saved-only and priority views keep them accessible. A collapsible list offers restore actions. Dismissed tasks no longer supply positive click/bookmark similarity signals; their original clicks and saves are preserved, so undo restores those signals. This does not infer a dislike of the entire topic.
+
+Self-critique: explicit controls help correct poor matches, but profile matching remains keyword based. Dismissing one task does not teach a learned model or suppress an entire topic. The demo still shares preferences across everyone using the same team identity.

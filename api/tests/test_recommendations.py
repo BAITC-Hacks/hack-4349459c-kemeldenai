@@ -121,3 +121,40 @@ def test_bookmark_is_stronger_than_click_and_removal_reverses_signal(tmp_path):
         client.delete(path + f"/bookmarks/{saved}")
         after = client.get(path + "/recommendations").json()
         assert [item["taskId"] for item in after] == [item["taskId"] for item in baseline]
+
+
+def test_dismissal_persists_is_team_scoped_and_can_be_undone(tmp_path):
+    url = f"sqlite:///{tmp_path}/dismissals.db"
+    with TestClient(create_app(database_url=url)) as client:
+        teams = client.get('/api/teams').json()
+        task_id = client.get('/api/tasks').json()[0]['id']
+        path = f"/api/teams/{teams[0]['id']}"
+        for _ in range(2):
+            assert client.put(path + f'/dismissals/{task_id}').status_code == 200
+        ranked = client.get(path + '/recommendations').json()
+        assert next(item for item in ranked if item['taskId'] == task_id)['dismissed']
+        assert not any(item['dismissed'] for item in client.get(f"/api/teams/{teams[1]['id']}/recommendations").json())
+        assert any(item['id'] == task_id for item in client.get('/api/tasks').json())
+        assert client.put(path + f'/dismissals/{uuid4()}').status_code == 404
+    with TestClient(create_app(database_url=url)) as client:
+        assert next(item for item in client.get(path + '/recommendations').json() if item['taskId'] == task_id)['dismissed']
+        for _ in range(2):
+            assert client.delete(path + f'/dismissals/{task_id}').status_code == 200
+        assert not any(item['dismissed'] for item in client.get(path + '/recommendations').json())
+
+
+def test_profile_edits_validate_and_preserve_omitted_fields(tmp_path):
+    with TestClient(create_app(database_url=f"sqlite:///{tmp_path}/profile.db")) as client:
+        team = client.get('/api/teams').json()[0]
+        path = f"/api/teams/{team['id']}"
+        result = client.put(path + '/focus', json={'interests': [], 'skills': [' Аналитика ', 'аналитика'], 'technologies': ['Python']})
+        assert result.status_code == 200
+        assert result.json()['skills'] == ['Аналитика']
+        assert result.json()['technologies'] == ['Python']
+        ranked = client.get(path + '/recommendations').json()
+        assert any('Аналитика' in reason for item in ranked for reason in item['reasons'])
+        result = client.put(path + '/focus', json={'interests': ['Экология']})
+        assert result.json()['skills'] == ['Аналитика']
+        for field in ['skills', 'technologies']:
+            for invalid in [[' '], ['x' * 81], ['x'] * 13, None]:
+                assert client.put(path + '/focus', json={'interests': [], field: invalid}).status_code == 422

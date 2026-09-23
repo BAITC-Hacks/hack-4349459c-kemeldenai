@@ -2,7 +2,7 @@
 
 Students can switch between the catalog and “Мои отклики”. This team-scoped history lists all submitted proposals, newest first, with the current decision, expandable proposal details, a safe HTTP(S) prototype link when present, and business-confirmed stages. A status filter narrows the history. Empty, loading, and retry states are explicit; a failed refresh labels retained data as previously loaded.
 
-Opening an application’s task clears catalog filters and the saved-only view so the requested task is visible. Switching views preserves in-memory proposal drafts. Successful submission offers a direct link to application history. History reloads on entry and through the refresh button; there are no push notifications or automatic polling.
+Opening an application’s task clears catalog filters and the saved-only view so the requested task is visible. Proposal drafts are saved synchronously to browser storage per team/task pair and restored on reload. They are local to the browser, not shared across devices. Successful submission removes only the submitted draft; failures retain it. Storage errors show a retry action and preserve the leave-page warning. Malformed stored records are reported without removing them. Concurrent tabs have no conflict resolution (last write wins). Successful submission offers a direct link to application history. History reloads on entry and through the refresh button; there are no push notifications or automatic polling.
 
 `GET /api/teams/{teamId}/applications` returns `{team, applications}`. Each application contains `{proposal, taskTitle, taskAvailable, milestones}`. Proposal and milestone objects retain their camelCase contracts. An unpublished task stays in the history with `taskAvailable: false`; the task-open action is disabled by omission. Invalid or missing team IDs return 422 or 404. This is a demo-team filter, not an authentication boundary.
 
@@ -16,3 +16,5 @@ A selected proposal is required. A unique constraint on proposal ID plus an atom
 Verification covers team isolation, empty history, invalid IDs, unavailable tasks, retained completed work, restart persistence, and simultaneous duplicate confirmations. Browser verification covers history entry, proposal expansion, and opening the correct task.
 
 Self-critique: the page answers “what happened to my proposal?” but students must refresh for new decisions. There is no rejection explanation because the current API stores only a decision. The demo uses shared team identities; private student accounts and pagination are outside this increment.
+
+Draft storage checks: `cd web && node --experimental-strip-types --test tests/proposalDraftStorage.test.mjs`. They cover exact restoration, team/task isolation, clearing one draft, corrupt records, and denied/quota-limited storage. A browser reload was also verified with a temporary draft, then the test text was cleared.

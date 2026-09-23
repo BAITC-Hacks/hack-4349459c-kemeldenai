@@ -4,7 +4,7 @@ import re
 from datetime import timedelta, timezone
 from uuid import UUID
 
-from api.app.database import Task, TaskBookmark, TaskClick, Team, utcnow
+from api.app.database import Task, TaskBookmark, TaskClick, TaskDismissal, Team, utcnow
 from api.app.models import ApiModel, TeamProfile
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import Field, field_validator
@@ -17,8 +17,10 @@ router = APIRouter(prefix="/api/teams")
 
 class FocusInput(ApiModel):
     interests: list[str] = Field(max_length=12)
+    skills: list[str] = Field(default_factory=list, max_length=12)
+    technologies: list[str] = Field(default_factory=list, max_length=12)
 
-    @field_validator("interests")
+    @field_validator("interests", "skills", "technologies")
     @classmethod
     def clean_interests(cls, values):
         cleaned = []
@@ -35,6 +37,7 @@ class Recommendation(ApiModel):
     task_id: UUID
     relevance: float
     reasons: list[str]
+    dismissed: bool = False
 
 
 def session_for(request: Request):
@@ -107,6 +110,9 @@ def rank_tasks(tasks, team, clicks, now, bookmarks=()):
 def update_focus(team_id: UUID, payload: FocusInput, session=Depends(session_for)):
     team = require_team(session, team_id)
     team.interests = payload.interests
+    for field in ("skills", "technologies"):
+        if field in payload.model_fields_set:
+            setattr(team, field, getattr(payload, field))
     session.commit()
     return team
 
@@ -126,7 +132,33 @@ def recommendations(team_id: UUID, session=Depends(session_for)):
         select(Task).join(TaskBookmark, TaskBookmark.task_id == Task.id)
         .where(TaskBookmark.team_id == str(team_id), Task.status == "published")
     ).all()
-    return rank_tasks(tasks, team, clicks, now, bookmarks)
+    dismissed = set(session.scalars(select(TaskDismissal.task_id).where(TaskDismissal.team_id == str(team_id))))
+    ranked = rank_tasks(tasks, team, [(task, time) for task, time in clicks if task.id not in dismissed], now,
+                        [task for task in bookmarks if task.id not in dismissed])
+    for item in ranked:
+        item.dismissed = str(item.task_id) in dismissed
+    return ranked
+
+
+@router.put("/{team_id}/dismissals/{task_id}")
+def dismiss_task(team_id: UUID, task_id: UUID, session=Depends(session_for)):
+    require_team(session, team_id)
+    task = session.get(Task, str(task_id))
+    if task is None or task.status != "published":
+        raise HTTPException(404, "Опубликованная задача не найдена")
+    insert = pg_insert if session.bind.dialect.name == "postgresql" else sqlite_insert
+    session.execute(insert(TaskDismissal).values(team_id=str(team_id), task_id=str(task_id))
+                    .on_conflict_do_nothing(index_elements=["team_id", "task_id"]))
+    session.commit()
+    return {"status": "ok"}
+
+
+@router.delete("/{team_id}/dismissals/{task_id}")
+def restore_task(team_id: UUID, task_id: UUID, session=Depends(session_for)):
+    require_team(session, team_id)
+    session.execute(delete(TaskDismissal).where(TaskDismissal.team_id == str(team_id), TaskDismissal.task_id == str(task_id)))
+    session.commit()
+    return {"status": "ok"}
 
 
 @router.get("/{team_id}/bookmarks", response_model=list[UUID])

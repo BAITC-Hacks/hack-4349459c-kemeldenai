@@ -68,8 +68,11 @@ export const api = {
   recommendations(teamId: string) {
     return requestArray<Recommendation>(`/api/teams/${encodeURIComponent(teamId)}/recommendations`)
   },
-  saveFocus(teamId: string, interests: string[]) {
-    return request<Team>(`/api/teams/${encodeURIComponent(teamId)}/focus`, { method: 'PUT', body: json({ interests }) })
+  saveFocus(teamId: string, interests: string[], skills: string[], technologies: string[]) {
+    return request<Team>(`/api/teams/${encodeURIComponent(teamId)}/focus`, { method: 'PUT', body: json({ interests, skills, technologies }) })
+  },
+  setDismissal(teamId: string, taskId: string, dismissed: boolean) {
+    return request(`/api/teams/${encodeURIComponent(teamId)}/dismissals/${encodeURIComponent(taskId)}`, { method: dismissed ? 'PUT' : 'DELETE' })
   },
   recordClick(teamId: string, taskId: string) {
     return request(`/api/teams/${encodeURIComponent(teamId)}/clicks/${encodeURIComponent(taskId)}`, { method: 'POST' })

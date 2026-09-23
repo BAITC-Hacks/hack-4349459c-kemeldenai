@@ -70,6 +70,13 @@ class Team(Base):
     progress_points: Mapped[int] = mapped_column(Integer, default=0)
 
 
+class TaskDismissal(Base):
+    __tablename__ = "task_dismissals"
+
+    team_id: Mapped[str] = mapped_column(ForeignKey("teams.id"), primary_key=True)
+    task_id: Mapped[str] = mapped_column(ForeignKey("tasks.id"), primary_key=True)
+
+
 class TaskBookmark(Base):
     __tablename__ = "task_bookmarks"
 
