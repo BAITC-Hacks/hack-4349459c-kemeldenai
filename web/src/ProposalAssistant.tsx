@@ -1,9 +1,7 @@
 import { useState } from 'react'
 import type { TaskCard } from './types'
 import type { ProposalDraft } from './proposalDraftStorage'
-import { applyAssistance, ASSISTED_FIELDS, suggestPlan, type AssistedField } from './proposalAssistance'
-
-const labels = { idea: 'Идея решения', plan: 'План работы', timeline: 'Срок' }
+import { suggestPlan } from './proposalAssistance'
 
 export function ProposalAssistant({ task, draft, disabled, onApply }: {
   task: TaskCard
@@ -11,42 +9,38 @@ export function ProposalAssistant({ task, draft, disabled, onApply }: {
   disabled: boolean
   onApply: (draft: ProposalDraft) => void
 }) {
-  const [preview, setPreview] = useState<Pick<ProposalDraft, AssistedField> | null>(null)
-  const [original, setOriginal] = useState('')
-  const [selected, setSelected] = useState<AssistedField[]>([])
-  const [error, setError] = useState('')
-  const [applied, setApplied] = useState(false)
-  function prepare() {
-    setPreview({ idea: draft.idea, plan: draft.plan || suggestPlan(task), timeline: draft.timeline })
-    setOriginal(JSON.stringify(draft))
-    setSelected(ASSISTED_FIELDS.filter((field) => !draft[field].trim()))
-    setError('')
-    setApplied(false)
+  const [replacement, setReplacement] = useState<{ plan: string; original: string } | null>(null)
+  const [message, setMessage] = useState('')
+  function focusPlan() {
+    requestAnimationFrame(() => document.getElementById('proposal-plan')?.focus())
   }
-  function apply() {
-    if (!preview || disabled) return
-    if (JSON.stringify(draft) !== original) {
-      setError('Основной черновик изменился. Создайте предпросмотр заново, чтобы не потерять правки.')
+  function prepare() {
+    const plan = suggestPlan(task)
+    setMessage('')
+    if (draft.plan.trim()) { setReplacement({ plan, original: draft.plan }); return }
+    onApply({ ...draft, plan })
+    setMessage('План добавлен. Отредактируйте его в поле «План работы» ниже.')
+    focusPlan()
+  }
+  function replace() {
+    if (!replacement || disabled) return
+    if (draft.plan !== replacement.original) {
+      setReplacement(null)
+      setMessage('План изменился. Нажмите «Предложить план» заново, чтобы сохранить ваши последние правки.')
       return
     }
-    try {
-      onApply(applyAssistance(draft, preview, selected))
-      setPreview(null)
-      setApplied(true)
-      setError('')
-    } catch (failure) { setError(failure instanceof Error ? failure.message : 'Проверьте выбранные поля.') }
+    onApply({ ...draft, plan: replacement.plan })
+    setReplacement(null)
+    setMessage('План обновлён. Проверьте его перед отправкой.')
+    focusPlan()
   }
   return <details className="proposal-assistant">
-    <summary>Помочь составить отклик</summary>
-    <p>Начните с плана по требованиям карточки, добавьте свой подход и реальный срок. Это редактируемый шаблон — проверьте каждый шаг перед отправкой.</p>
-    <div className="assistant-brief"><strong>На что ответить в предложении</strong><p><b>Потребность:</b> {task.need.trim() || 'Нужно уточнить у заказчика.'}</p><p><b>Ожидаемый результат:</b> {task.expectedResult.trim() || 'Нужно согласовать с заказчиком.'}</p><p><b>Проверка успеха:</b> {task.successCriteria.trim() || 'Критерии пока не указаны.'}</p></div>
-    <button type="button" className="button button--outline" disabled={disabled} onClick={prepare}>{preview ? 'Создать предпросмотр заново' : 'Подготовить черновик'}</button>
-    {preview && <fieldset disabled={disabled} className="assistant-preview"><legend>Проверьте и отредактируйте</legend><p>Предпросмотр ещё не сохранён. Выберите поля для переноса. Уже заполненные поля не выбраны автоматически.</p>
-      {ASSISTED_FIELDS.map((field) => <div key={field}><label className="assistant-select"><input type="checkbox" checked={selected.includes(field)} onChange={(event) => setSelected((current) => event.target.checked ? [...current, field] : current.filter((item) => item !== field))} />Перенести: {labels[field]}{draft[field].trim() && ' — заменит текущий текст'}</label><label className="field"><span className="field__label">{labels[field]} в предпросмотре</span><textarea rows={field === 'plan' ? 8 : 3} maxLength={field === 'timeline' ? 300 : 12000} value={preview[field]} onChange={(event) => setPreview({ ...preview, [field]: event.target.value })} placeholder={field === 'idea' ? 'Как именно ваша команда предлагает решить задачу?' : field === 'timeline' ? 'Укажите срок, который команда действительно может выдержать.' : ''} /></label></div>)}
-      <p>Ссылку на настоящий прототип добавьте в основной форме.</p>
-      <button type="button" className="button button--dark" disabled={!selected.length} onClick={apply}>Перенести выбранные поля</button> <button type="button" className="button button--text" onClick={() => { setPreview(null); setError('') }}>Отменить предпросмотр</button>
-    </fieldset>}
-    {error && <p className="error-message" role="alert">{error}</p>}
-    {applied && <p role="status">Поля перенесены в черновик. Проверьте форму ниже перед отправкой.</p>}
+    <summary>Нужна помощь с откликом?</summary>
+    <p>В идее опишите свой подход. В плане — шаги и проверку результата. Укажите срок, который команда сможет выдержать.</p>
+    <p><strong>Проверка успеха:</strong> {task.successCriteria.trim() || 'Согласуйте измеримые критерии с заказчиком.'}</p>
+    <button type="button" className="button button--outline" disabled={disabled} onClick={prepare}>Предложить план по задаче</button>
+    <p className="muted">Редактируемый шаблон появится в основной форме. Идея, срок и ссылка на прототип останутся вашими.</p>
+    {replacement && <div className="assistant-replace" role="group" aria-label="Замена существующего плана"><p>У вас уже есть план. Заменить его шаблоном?</p><button type="button" className="button button--outline" disabled={disabled} onClick={replace}>Заменить план</button> <button type="button" className="button button--text" onClick={() => setReplacement(null)}>Оставить мой план</button></div>}
+    {message && <p role="status">{message}</p>}
   </details>
 }
