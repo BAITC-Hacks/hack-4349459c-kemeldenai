@@ -1,6 +1,8 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { transferClarificationAnswers } from './clarificationAnswers'
 import { reconcileTaskSuggestions, removeSuggestionEdit } from './taskSuggestions'
+import { restoreTask } from './taskRestore'
+import { catalogTopics, matchesTopic } from './catalogTopics'
 import { api } from './api'
 import { useBookmarks } from './bookmarks'
 import { MyApplications } from './MyApplications'
@@ -247,19 +249,21 @@ function App() {
   const workspace: Workspace | null = persona?.role === 'business' ? 'business' : activeTeam ? 'student' : null
   const dirty = CARD_FIELDS.some((field) => card[field] !== (task?.[field] ?? ''))
   const [restorePending, setRestorePending] = useState(() => !!localStorage.getItem('hackalem.currentTaskId'))
-  const fieldsDisabled = builderBusy || restorePending
+  const [restoreFailure, setRestoreFailure] = useState<{ id: string; message: string } | null>(null)
+  const restoreRequest = useRef(0)
+  const fieldsDisabled = builderBusy || restorePending || !!restoreFailure
   const currentStepIndex = builderSteps.findIndex((item) => item.key === step)
   const publishReady = !!task?.confirmedAt && !dirty
   const hasUnappliedAnswers = Object.values(answers).some((value) => value.trim())
   const hasUnsavedProposalDraft = proposalDraftStorage.unsaved
   const visibleProposals = proposalsTaskId === businessTaskId ? proposals : []
   const businessTasks = tasks
-  const topics = Array.from(new Set(tasks.map((item) => item.topic).filter(Boolean))).sort((a, b) => a.localeCompare(b, 'ru'))
+  const topics = catalogTopics(tasks)
   const visibleTasks = tasks.filter((item) =>
     (!savedOnly || bookmarks.ids.includes(item.id)) &&
     (savedOnly || catalogSort !== 'recommended' || !recommendationMap.get(item.id)?.dismissed) &&
     (!search.trim() || [item.title, item.description, item.industry, item.topic, item.need].join(' ').toLocaleLowerCase('ru').includes(search.trim().toLocaleLowerCase('ru'))) &&
-    (!topicFilter || item.topic === topicFilter) &&
+    matchesTopic(item.topic, topicFilter) &&
     (!readinessFilter || item.readiness === readinessFilter),
   ).sort((a, b) => (catalogSort === 'recommended' ? (recommendationMap.get(b.id)?.relevance ?? 0) - (recommendationMap.get(a.id)?.relevance ?? 0) : 0) || (b.score ?? 0) - (a.score ?? 0))
   const selectedTask = visibleTasks.find((item) => item.id === selectedTaskId) ?? visibleTasks[0] ?? null
@@ -379,17 +383,31 @@ function App() {
     }
   }
 
+  async function restoreDraft(id: string) {
+    const request = ++restoreRequest.current
+    setRestorePending(true)
+    setRestoreFailure(null)
+    const result = await restoreTask(id, api.task)
+    if (request !== restoreRequest.current) return
+    if (result.kind === 'restored') {
+      setTask(result.task)
+      setCard(editableFromTask(result.task))
+      setStep(result.task.confirmedAt ? 'publish' : 'review')
+    } else if (result.kind === 'missing') {
+      localStorage.removeItem('hackalem.currentTaskId')
+      setNotice('Сохранённая карточка больше не доступна. Можно создать новую задачу.')
+    } else {
+      setRestoreFailure({ id: result.id, message: result.message })
+    }
+    setRestorePending(false)
+  }
+
   useEffect(() => {
     void refreshCatalog()
     void refreshTeams()
     const savedId = localStorage.getItem('hackalem.currentTaskId')
-    if (savedId) {
-      void api.task(savedId).then((saved) => {
-        setTask(saved)
-        setCard(editableFromTask(saved))
-        setStep(saved.confirmedAt ? 'publish' : 'review')
-      }).catch(() => localStorage.removeItem('hackalem.currentTaskId')).finally(() => setRestorePending(false))
-    }
+    if (savedId) void restoreDraft(savedId)
+    return () => { restoreRequest.current++ }
   }, [])
 
   useEffect(() => {
@@ -554,6 +572,9 @@ function App() {
   }
 
   function newTask() {
+    restoreRequest.current++
+    setRestorePending(false)
+    setRestoreFailure(null)
     setShowNewTaskPrompt(false)
     setPublicationComplete(false)
     setSavedFeedback(false)
@@ -681,13 +702,13 @@ function App() {
               ? businessPage === 'responses' ? 'Сравните подходы и выберите команды для совместной работы.' : 'Уточните детали, проверьте готовность и опубликуйте задачу для студенческих команд.'
               : studentPage === 'applications' ? 'Решения бизнеса и подтверждённый прогресс вашей команды.' : 'Все опубликованные задачи открыты для отклика. Рейтинг показывает, насколько они готовы к работе.'}</p>
           </div>
-          {workspace === 'business' && <button className="button button--outline page-heading__action" type="button" disabled={fieldsDisabled} onClick={() => (dirty || hasUnappliedAnswers) ? setShowNewTaskPrompt(true) : newTask()}>+ Новая задача</button>}
+          {workspace === 'business' && <button className="button button--outline page-heading__action" type="button" disabled={builderBusy || restorePending} onClick={() => (dirty || hasUnappliedAnswers || restoreFailure) ? setShowNewTaskPrompt(true) : newTask()}>+ Новая задача</button>}
         </div>
 
-        <CompletionDialog open={showNewTaskPrompt} title="Начать новую задачу?" description={hasUnappliedAnswers ? 'Введённые ответы ещё не перенесены в карточку. Если начать заново, они и несохранённые изменения будут потеряны.' : 'В карточке есть несохранённые изменения. Вернитесь к ней, чтобы закончить работу, или начните заново.'} onClose={() => setShowNewTaskPrompt(false)}>
+        <CompletionDialog open={showNewTaskPrompt} title="Начать новую задачу?" description={restoreFailure ? 'Сохранённую карточку сейчас не удалось загрузить. Если начать новую задачу, автоматическое восстановление предыдущей карточки прекратится.' : hasUnappliedAnswers ? 'Введённые ответы ещё не перенесены в карточку. Если начать заново, они и несохранённые изменения будут потеряны.' : 'В карточке есть несохранённые изменения. Вернитесь к ней, чтобы закончить работу, или начните заново.'} onClose={() => setShowNewTaskPrompt(false)}>
           <div className="dialog-actions">
             <button className="button button--dark" type="button" onClick={() => setShowNewTaskPrompt(false)}>Продолжить редактирование</button>
-            <button className="button button--text button--danger" type="button" onClick={newTask}>Начать без сохранения</button>
+            <button className="button button--text button--danger" type="button" onClick={newTask}>{restoreFailure ? 'Начать новую задачу' : 'Начать без сохранения'}</button>
           </div>
         </CompletionDialog>
         <CompletionDialog open={publicationComplete} success title="Задача опубликована" description="Всё готово. Теперь команды могут найти вашу задачу и предложить решение." onClose={closePublication}>
@@ -760,8 +781,9 @@ function App() {
                   </section>}
 
                   <div className={`builder-actionbar ${savedFeedback ? 'builder-actionbar--saved' : ''}`} aria-label="Действия с карточкой">
+                    {restoreFailure && <div className="error-message" role="alert"><span>Не удалось восстановить сохранённую карточку. {restoreFailure.message} Ссылка на неё сохранена; повторите загрузку перед редактированием.</span><button className="button button--outline" type="button" onClick={() => void restoreDraft(restoreFailure.id)}>Повторить загрузку карточки</button></div>}
                     {builderError && <p className="error-message" role="alert">{builderError}</p>}
-                    <div className="builder-actionbar__status" role="status"><strong>{savedFeedback && <span className="save-check" aria-hidden="true">✓</span>}{restorePending ? 'Загружаем карточку…' : builderAction === 'save' ? 'Сохраняем черновик…' : hasUnappliedAnswers ? 'Ответы ещё не перенесены в карточку' : dirty ? 'Есть несохранённые изменения' : task ? task.status === 'published' ? 'Опубликовано' : savedAt ? `Сохранено в ${savedAt}` : 'Сохранено' : 'Новая карточка'}</strong><span>Шаг {currentStepIndex + 1} из 4{step === 'publish' && dirty ? ' · Сначала подтвердите изменения' : ''}</span></div>
+                    <div className="builder-actionbar__status" role="status"><strong>{savedFeedback && <span className="save-check" aria-hidden="true">✓</span>}{restorePending ? 'Загружаем карточку…' : restoreFailure ? 'Карточку нужно восстановить' : builderAction === 'save' ? 'Сохраняем черновик…' : hasUnappliedAnswers ? 'Ответы ещё не перенесены в карточку' : dirty ? 'Есть несохранённые изменения' : task ? task.status === 'published' ? 'Опубликовано' : savedAt ? `Сохранено в ${savedAt}` : 'Сохранено' : 'Новая карточка'}</strong><span>Шаг {currentStepIndex + 1} из 4{step === 'publish' && dirty ? ' · Сначала подтвердите изменения' : ''}</span></div>
                     <div className="builder-actionbar__buttons">
                       {task?.status !== 'published' && <button className="button button--outline" type="button" onClick={() => void saveDraft()} disabled={fieldsDisabled || (!dirty && !!task)}><BusyLabel busy={builderAction === 'save'} idle={savedFeedback && !dirty ? 'Черновик сохранён' : 'Сохранить черновик'} pending="Сохраняем…" /></button>}
                       {step === 'description' && <><button className="button button--text" type="button" disabled={fieldsDisabled} onClick={() => setStep('review')}>Заполнить самостоятельно</button><button className="button button--dark" type="button" disabled={fieldsDisabled} onClick={() => void analyze()}><BusyLabel busy={builderAction === 'analyze'} idle="Получить вопросы" pending="Готовим вопросы…" /> <ArrowIcon /></button></>}

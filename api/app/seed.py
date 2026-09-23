@@ -198,11 +198,24 @@ def seed_database(engine, factory) -> None:
             )
         for i, fields in enumerate(drafts):
             key = f"demo-draft-{i + 1}"
-            if session.scalar(select(Task.id).where(Task.seed_key == key)):
+            existing = session.scalar(select(Task).where(Task.seed_key == key))
+            if existing:
+                # Older seeds left these response fields null. Repair only absent
+                # metadata on unconfirmed drafts, keeping every business edit.
+                if existing.status == "draft" and existing.confirmed_at is None:
+                    if existing.readiness is None:
+                        existing.readiness = "draft"
+                    if existing.breakdown is None:
+                        existing.breakdown = []
+                    if existing.missing is None:
+                        existing.missing = []
                 continue
             complete_fields = {field: "" for field in published_cards[0]}
             complete_fields.update(fields)
-            session.add(Task(id=task_ids[i + 5], seed_key=key, **complete_fields, status="draft"))
+            session.add(Task(
+                id=task_ids[i + 5], seed_key=key, **complete_fields, status="draft",
+                readiness="draft", breakdown=[], missing=[],
+            ))
         for i, (name, interests, skills, technologies) in enumerate(team_rows):
             key = f"demo-team-{i + 1}"
             if session.scalar(select(Team.id).where(Team.seed_key == key)):

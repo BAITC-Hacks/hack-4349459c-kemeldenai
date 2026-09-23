@@ -71,11 +71,11 @@ export function MilestonePanel({ proposalId, onConfirmed }: Props) {
       ) : (
         <form onSubmit={(event) => void confirm(event)}>
           <p>Когда команда завершит этап, опишите проверенный результат и подтвердите начисление.</p>
-          <label className="field"><span className="field__label">Что команда завершила? *</span><textarea rows={2} required value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Например, прототип проверен с заказчиком" /></label>
+          <label className="field"><span className="field__label">Что команда завершила? *</span><textarea rows={2} required disabled={busy} value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Например, прототип проверен с заказчиком" /></label>
           <button className="button button--outline" disabled={busy || !!error && !description.trim()} type="submit">{busy ? 'Подтверждаем…' : 'Подтвердить этап и начислить 10 баллов'}</button>
         </form>
       )}
-      {error && <div className="milestone-panel__error"><p className="error-message" role="alert">{error}</p><button className="button button--outline" type="button" onClick={() => void reload()}>Повторить</button></div>}
+      {error && <div className="milestone-panel__error"><p className="error-message" role="alert">{error}</p><button className="button button--outline" type="button" disabled={busy || loading} onClick={() => void reload()}>Повторить</button></div>}
     </div>
   )
 }

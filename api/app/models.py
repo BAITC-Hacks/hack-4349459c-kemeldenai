@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Literal
 from uuid import UUID
 
@@ -20,6 +20,15 @@ class ApiModel(BaseModel):
     model_config = ConfigDict(
         alias_generator=to_camel, populate_by_name=True, extra="forbid", from_attributes=True
     )
+
+    @field_validator("created_at", "updated_at", "confirmed_at", check_fields=False)
+    @classmethod
+    def restore_utc_offset(cls, value: datetime | None) -> datetime | None:
+        # All database timestamps are written in UTC; SQLite drops their offset
+        # on read. Keep the instant unambiguous for browsers in other time zones.
+        if value is not None and value.tzinfo is None:
+            return value.replace(tzinfo=timezone.utc)
+        return value
 
 
 class TaskInput(ApiModel):

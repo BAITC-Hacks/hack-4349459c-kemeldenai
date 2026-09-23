@@ -73,7 +73,7 @@ a { color: #0f665d; text-underline-offset: 3px; }
 .persona-header > span { display: flex; flex-direction: column; min-width: 0; }
 .persona-header small { color: #247467; font-size: 9px; font-weight: 850; letter-spacing: .13em; }
 .persona-header strong { color: #213530; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.persona-header em { color: #87948d; font-size: 10px; font-style: normal; }
+.persona-header em { color: var(--color-muted); font-size: 10px; font-style: normal; }
 .persona-header .button { white-space: nowrap; min-height: 36px; padding: 8px 11px; }
 .topbar__caption { justify-self: end; font-size: 12px; font-weight: 700; color: #72807d; white-space: nowrap; }
 .topbar--entry { grid-template-columns: 1fr auto; }
@@ -128,7 +128,7 @@ h3 { letter-spacing: -.025em; }
 .team-banner > div:first-child { display: flex; flex-direction: column; gap: 3px; }
 .team-banner span { color: #648477; font-size: 11px; font-weight: 700; }
 .team-banner strong { color: #1a594e; font-size: 17px; }
-.team-banner small { color: #789084; font-size: 11px; }
+.team-banner small { color: var(--color-muted); font-size: 11px; }
 .team-banner__points { display: flex; flex-direction: column; align-items: end; flex: none; }
 .team-banner__points strong { font-size: 29px; line-height: 1; }
 .error-message { background: #fff0eb; color: var(--color-danger); border: 1px solid #f1cbbd; border-radius: 8px; padding: 12px 14px; font-size: 13px; line-height: 1.45; margin: 14px 0; }
@@ -261,7 +261,7 @@ h3 { letter-spacing: -.025em; }
 .proposal-form .section-heading p { margin: 0; color: var(--color-muted); font-size: 12px; }
 .proposal-form > .button { width: 100%; }
 
-.footer { display: flex; justify-content: space-between; gap: 14px; padding: 22px clamp(20px, 4vw, 64px); border-top: 1px solid #e0e6df; color: #9ba79e; font-size: 11px; font-weight: 650; }
+.footer { display: flex; justify-content: space-between; gap: 14px; padding: 22px clamp(20px, 4vw, 64px); border-top: 1px solid #e0e6df; color: var(--color-muted); font-size: 11px; font-weight: 650; }
 
 @media (max-width: 1100px) {
   .builder-layout { grid-template-columns: minmax(0, 1fr) 280px; gap: 18px; }

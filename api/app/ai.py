@@ -271,12 +271,19 @@ async def analyze_questions(description: str, industry: str, card: dict | None =
         if not any(item["field"] == suggestion["field"] for item in suggestions):
             suggestions.append(suggestion)
     ai_count = len(questions)
-    for field in allowed:
+    # Extra refinements keep the three-question minimum if a provider's accepted
+    # text already matches one of the usual fallback questions for another field.
+    fallback_fields = allowed + [field for field in REFINEMENT_QUESTIONS if field not in allowed]
+    for field in fallback_fields:
         if len(questions) >= 3:
             break
         if field not in seen_fields:
             text = FIELD_QUESTIONS[field] if field in missing else REFINEMENT_QUESTIONS[field]
+            normalized = " ".join(text.casefold().split())
+            if normalized in seen_questions:
+                continue
             questions.append({"field": field, "question": text})
             seen_fields.add(field)
+            seen_questions.add(normalized)
     source = "ai" if ai_count >= 3 else "mixed" if ai_count or model_suggestion_count else "fallback"
     return {"questions": questions[:5], "suggestedFields": suggestions[:4], "source": source}

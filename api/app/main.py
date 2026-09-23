@@ -35,7 +35,7 @@ from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from sqlalchemy import select, text, update
+from sqlalchemy import func, select, text, update
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -155,7 +155,7 @@ def create_app(database_url: str | None = None, seed: bool = True) -> FastAPI:
     ):
         query = select(TaskRow).where(TaskRow.status == "published")
         if topic:
-            query = query.where(TaskRow.topic == topic.strip())
+            query = query.where(func.trim(TaskRow.topic) == topic.strip())
         if readiness:
             query = query.where(TaskRow.readiness == readiness)
         return [
