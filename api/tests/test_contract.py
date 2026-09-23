@@ -58,6 +58,7 @@ def test_same_team_can_submit_repeatedly_and_select_multiple(client):
         "idea": "Проверить гипотезу",
         "plan": "Собрать прототип",
         "timeline": "Две недели",
+        "prototypeUrl": "https://example.org/prototype",
     }
     first = client.post(f"/api/tasks/{task['id']}/proposals", json=body)
     second = client.post(f"/api/tasks/{task['id']}/proposals", json=body)
@@ -76,7 +77,13 @@ def test_same_team_can_submit_repeatedly_and_select_multiple(client):
 def test_draft_proposals_and_unknown_teams_are_rejected(client):
     draft = client.post("/api/tasks", json={"title": "Черновик"}).json()
     team = client.get("/api/teams").json()[0]
-    body = {"teamId": team["id"], "idea": "Идея", "plan": "План", "timeline": "Неделя"}
+    body = {
+        "teamId": team["id"],
+        "idea": "Идея",
+        "plan": "План",
+        "timeline": "Неделя",
+        "prototypeUrl": "https://example.org/prototype",
+    }
     assert client.post(f"/api/tasks/{draft['id']}/proposals", json=body).status_code == 409
     assert client.get(f"/api/tasks/{draft['id']}/proposals").status_code == 409
     task = client.get("/api/tasks").json()[0]

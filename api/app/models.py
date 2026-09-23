@@ -8,6 +8,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator
 
+from .scoring import is_meaningful
+
 
 def to_camel(value: str) -> str:
     head, *tail = value.split("_")
@@ -82,14 +84,14 @@ class ProposalInput(ApiModel):
     idea: str = Field(min_length=1, max_length=12000)
     plan: str = Field(min_length=1, max_length=12000)
     timeline: str = Field(min_length=1, max_length=300)
-    prototype_url: str = Field(default="", max_length=2048)
+    prototype_url: str = Field(min_length=1, max_length=2048)
 
     @field_validator("prototype_url")
     @classmethod
     def validate_http_url(cls, value: str) -> str:
         value = value.strip()
         if not value:
-            return value
+            raise ValueError("prototypeUrl is required")
         parsed = HttpUrl(value)
         if parsed.scheme not in ("http", "https"):
             raise ValueError("prototypeUrl must use HTTP or HTTPS")
@@ -117,6 +119,26 @@ class Proposal(ApiModel):
 
 class ProposalDecision(ApiModel):
     decision: Literal["selected", "rejected"]
+
+
+class MilestoneInput(ApiModel):
+    description: str = Field(min_length=3, max_length=2000)
+
+    @field_validator("description")
+    @classmethod
+    def meaningful_description(cls, value: str) -> str:
+        value = value.strip()
+        if len(value) < 3 or not is_meaningful(value):
+            raise ValueError("Describe the completed stage")
+        return value
+
+
+class Milestone(ApiModel):
+    id: UUID
+    proposal_id: UUID
+    description: str
+    points_awarded: int
+    confirmed_at: datetime
 
 
 class AnalyzeInput(ApiModel):

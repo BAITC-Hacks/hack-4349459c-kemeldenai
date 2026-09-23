@@ -26,7 +26,7 @@ Do not commit `.env`, API keys, or local database files. Stop the database with 
 - Initial Computer A branch: `codex/agent-a-api`
 - Initial Computer B branch: `codex/agent-b-ui`
 
-The initial API and UI branches are integrated on `main`. For the next round of parallel work, both computers should pull the latest `origin/main`, create new branches, and open pull requests. Integrate against the contract in [docs/MAIN_TASK.md](docs/MAIN_TASK.md) before merging.
+The initial API and UI branches are integrated on `main`. For future parallel work, divide ownership by complete user-facing tasks rather than by frontend and backend layers. Each task includes its necessary UI, API, data, tests, and documentation. Both computers should pull the latest `origin/main`, work on separate branches, and integrate against the contract in [docs/MAIN_TASK.md](docs/MAIN_TASK.md) before merging.
 
 ## Backend (Agent A)
 
@@ -66,7 +66,7 @@ Scoring checks meaningful, non-placeholder values in these seven categories:
 
 Context/need split into 10 points each; contact/interaction split into 5 each. Each subpart earns its full weight or zero. Empty strings, whitespace and obvious placeholders earn zero. This transparent completeness score is not a claim that the business facts are correct. `breakdown` exposes earned/max values and `missing` names the fields to improve. The four bands are `draft` (0–39), `workable` (40–69), `ready` (70–89), and `priority` (90–100); these are independent of publication status.
 
-The catalog includes **every** published card, sorted by score descending. Optional `topic` and `readiness` filters narrow it only when requested. Low scores never block proposals. A team may submit more than once, and the business may select multiple proposals, reject them, or leave them pending. No model chooses a team. Milestone points are reserved for a later optional extension.
+The catalog includes **every** published card, sorted by score descending. Optional `topic` and `readiness` filters narrow it only when requested. Low scores never block proposals. A team may submit more than once, and the business may select multiple proposals, reject them, or leave them pending. No model chooses a team. After a selected team completes a stage, the business can confirm it once and award 10 persistent progress points through `POST /api/proposals/{id}/milestones`; repeats return 409.
 
 ### AI clarification
 
@@ -124,6 +124,6 @@ Open the local URL printed by Vite. The development server proxies `/api` to `ht
 1. **0:00–0:45:** In business mode, enter «Нужен сервис для магазина» and show three clarification questions.
 2. **0:45–2:00:** Save a weak draft, confirm it, then add context, available data and measurable acceptance criteria. Confirm again and show the increase and category breakdown.
 3. **2:00–2:30:** Publish; switch to student mode and find the card in the score-sorted catalog. Show that a low-rated seed card is also visible.
-4. **2:30–3:30:** Choose a demo team and submit an idea, plan, timeline and optional prototype URL.
+4. **2:30–3:30:** Choose a demo team and submit an idea, plan, timeline and required HTTP(S) prototype URL.
 5. **3:30–4:30:** Return to business mode, select the proposal, then show another proposal can be selected or rejected manually.
 6. **4:30–5:00:** Show the published card's missing-information hints and the deterministic fallback indicator when no AI key is configured.

@@ -132,7 +132,7 @@ def test_draft_confirmation_publication_proposals_and_manual_decisions(tmp_path)
                 "idea": "Another idea",
                 "plan": "Run a second route",
                 "timeline": "Three weeks",
-                "prototypeUrl": "",
+                "prototypeUrl": "https://example.org/another-demo",
             },
         ).json()
         assert (
@@ -193,7 +193,7 @@ def test_low_score_confirmed_task_can_be_published_and_proposed_to(tmp_path):
                 "idea": "An idea",
                 "plan": "A plan",
                 "timeline": "One month",
-                "prototypeUrl": "",
+                "prototypeUrl": "https://example.org/low-score-demo",
             },
         )
         assert response.status_code == 201

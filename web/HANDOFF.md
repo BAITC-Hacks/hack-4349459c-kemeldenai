@@ -13,6 +13,6 @@ Branch: `codex/agent-b-demo-roles`. Changes stay under `web/`.
 
 `cd web && npm run build` passes. A Chrome browser walkthrough against the running FastAPI/PostgreSQL app covered demo entry, participant switching, preserved business draft, three clarification questions, confirmed score growth from 30 to 80, publication, Data Nomads proposal submission with the correct `teamId`, required prototype link, persisted student persona, and stale-persona recovery. Only the two new milestone endpoints and resulting point increase were mocked, following `docs/NEXT_TASK.md`; one completed-stage confirmation displayed 10 points and no duplicate control. No browser errors occurred. Desktop and mobile entry layouts were inspected; the 390 px mobile viewport had no horizontal overflow.
 
-## Integration with Agent A
+## API integration
 
-Agent A must implement the two milestone endpoints and require a valid prototype link for new proposals. Once that branch lands, rerun the same browser path without mocking milestone requests and check the point increase persists after a PostgreSQL restart. The current `main` API returns 404 for milestone requests, which the selected-proposal panel displays as a retryable loading error until Agent A's branch is integrated.
+The two milestone endpoints and required prototype link are now implemented on `main`. The backend's isolated PostgreSQL acceptance script verifies one-time points, concurrent duplicates, and restart persistence. Rerun the browser path without mocks against the local API when validating the complete demo.
