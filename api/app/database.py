@@ -61,6 +61,14 @@ class Team(Base):
     progress_points: Mapped[int] = mapped_column(Integer, default=0)
 
 
+class TaskBookmark(Base):
+    __tablename__ = "task_bookmarks"
+
+    team_id: Mapped[str] = mapped_column(ForeignKey("teams.id"), primary_key=True)
+    task_id: Mapped[str] = mapped_column(ForeignKey("tasks.id"), primary_key=True)
+    saved_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
 class TaskClick(Base):
     """One recent positive signal per team/task; repeated clicks cannot inflate weight."""
 
@@ -84,6 +92,16 @@ class Proposal(Base):
     prototype_url: Mapped[str] = mapped_column(String(2048), default="")
     decision: Mapped[str] = mapped_column(String(20), default="pending", index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class Milestone(Base):
+    __tablename__ = "milestones"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    proposal_id: Mapped[str] = mapped_column(ForeignKey("proposals.id"), unique=True)
+    description: Mapped[str] = mapped_column(Text)
+    points_awarded: Mapped[int] = mapped_column(Integer, default=10)
+    confirmed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
 def make_engine(database_url: str | None = None):

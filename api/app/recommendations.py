@@ -4,7 +4,7 @@ import re
 from datetime import timedelta, timezone
 from uuid import UUID
 
-from api.app.database import Task, TaskClick, Team, utcnow
+from api.app.database import Task, TaskBookmark, TaskClick, Team, utcnow
 from api.app.models import ApiModel, TeamProfile
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import Field, field_validator
@@ -53,7 +53,7 @@ def tokens(value):
     return set(re.findall(r"[\w]+", value.casefold()))
 
 
-def rank_tasks(tasks, team, clicks, now):
+def rank_tasks(tasks, team, clicks, now, bookmarks=()):
     ranked = []
     for task in tasks:
         text = tokens(" ".join(getattr(task, key) or "" for key in (
@@ -86,9 +86,19 @@ def rank_tasks(tasks, team, clicks, now):
             reasons.append("Навыки команды: " + ", ".join(skills[:2]))
         if behavior:
             reasons.append("Похоже на просмотренное: " + similar_topic)
+        saved_affinity = 0.0
+        for saved in bookmarks:
+            if saved.id == task.id:
+                continue
+            affinity = 1.0 if task.topic and task.topic.casefold() == saved.topic.casefold() else (
+                0.5 if task.industry and task.industry.casefold() == saved.industry.casefold() else 0.0
+            )
+            saved_affinity = max(saved_affinity, affinity)
+        if saved_affinity:
+            reasons.append("Похоже на сохранённые задачи команды")
         if not reasons:
             reasons.append("По готовности задачи — пока нет совпадений с интересами")
-        score = 0.6 * profile + 0.3 * behavior + 0.1 * (task.score or 0) / 100
+        score = 0.6 * profile + max(0.3 * behavior, 0.4 * saved_affinity) + 0.1 * (task.score or 0) / 100
         ranked.append(Recommendation(task_id=task.id, relevance=round(score, 6), reasons=reasons))
     return sorted(ranked, key=lambda item: (-item.relevance, str(item.task_id)))
 
@@ -112,7 +122,44 @@ def recommendations(team_id: UUID, session=Depends(session_for)):
                TaskClick.clicked_at >= now - timedelta(days=90))
         .order_by(TaskClick.clicked_at.desc()).limit(50)
     ).all()
-    return rank_tasks(tasks, team, clicks, now)
+    bookmarks = session.scalars(
+        select(Task).join(TaskBookmark, TaskBookmark.task_id == Task.id)
+        .where(TaskBookmark.team_id == str(team_id), Task.status == "published")
+    ).all()
+    return rank_tasks(tasks, team, clicks, now, bookmarks)
+
+
+@router.get("/{team_id}/bookmarks", response_model=list[UUID])
+def list_bookmarks(team_id: UUID, session=Depends(session_for)):
+    require_team(session, team_id)
+    return session.scalars(
+        select(TaskBookmark.task_id).join(Task, Task.id == TaskBookmark.task_id)
+        .where(TaskBookmark.team_id == str(team_id), Task.status == "published")
+        .order_by(TaskBookmark.saved_at.desc(), TaskBookmark.task_id)
+    ).all()
+
+
+@router.put("/{team_id}/bookmarks/{task_id}")
+def save_bookmark(team_id: UUID, task_id: UUID, session=Depends(session_for)):
+    require_team(session, team_id)
+    task = session.get(Task, str(task_id))
+    if task is None or task.status != "published":
+        raise HTTPException(404, "Опубликованная задача не найдена")
+    insert = pg_insert if session.bind.dialect.name == "postgresql" else sqlite_insert
+    session.execute(insert(TaskBookmark).values(team_id=str(team_id), task_id=str(task_id))
+                    .on_conflict_do_nothing(index_elements=["team_id", "task_id"]))
+    session.commit()
+    return {"status": "ok"}
+
+
+@router.delete("/{team_id}/bookmarks/{task_id}")
+def remove_bookmark(team_id: UUID, task_id: UUID, session=Depends(session_for)):
+    require_team(session, team_id)
+    session.execute(delete(TaskBookmark).where(
+        TaskBookmark.team_id == str(team_id), TaskBookmark.task_id == str(task_id),
+    ))
+    session.commit()
+    return {"status": "ok"}
 
 
 @router.post("/{team_id}/clicks/{task_id}")

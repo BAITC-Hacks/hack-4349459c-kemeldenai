@@ -8,6 +8,7 @@ import type {
   TaskCard,
   Team,
   Recommendation,
+  ApplicationsSnapshot,
 } from './types'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') ?? ''
@@ -55,6 +56,15 @@ async function requestArray<T>(path: string): Promise<T[]> {
 }
 
 export const api = {
+  applications(teamId: string) {
+    return request<ApplicationsSnapshot>(`/api/teams/${encodeURIComponent(teamId)}/applications`)
+  },
+  bookmarks(teamId: string) {
+    return requestArray<string>(`/api/teams/${encodeURIComponent(teamId)}/bookmarks`)
+  },
+  setBookmark(teamId: string, taskId: string, saved: boolean) {
+    return request(`/api/teams/${encodeURIComponent(teamId)}/bookmarks/${encodeURIComponent(taskId)}`, { method: saved ? 'PUT' : 'DELETE' })
+  },
   recommendations(teamId: string) {
     return requestArray<Recommendation>(`/api/teams/${encodeURIComponent(teamId)}/recommendations`)
   },

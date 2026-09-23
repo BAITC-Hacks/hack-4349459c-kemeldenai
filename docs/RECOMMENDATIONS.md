@@ -4,7 +4,7 @@ The student catalog defaults to personalized ranking, with the original readines
 
 The first version uses an explainable content baseline, without an external service or model training. Case-insensitive whole-word matches connect team interests, skills, and technologies to task title, topic, industry, description, need, materials, and expected result. It does not understand synonyms, Russian inflection, or semantic similarity.
 
-Ranking combines 60% profile match, 30% similarity to recently clicked tasks, and 10% readiness. The profile signal is capped at one, with 0.7 per matching focus and 0.3 per matching skill/technology. Click similarity uses the strongest recent match: one for the same topic, or 0.5 for the same industry. A click's weight halves every 14 days. Ranking uses at most 50 distinct clicked tasks from the last 90 days. These are initial heuristic weights, not learned or validated quality estimates.
+Ranking combines 0.6 × profile match, the stronger of 0.3 × click similarity or 0.4 × bookmark similarity, and 0.1 × readiness. Relevance is a ranking value, not a percentage. The profile signal is capped at one, with 0.7 per matching focus and 0.3 per matching skill/technology. Similarity uses the strongest match: one for the same topic, or 0.5 for the same industry. A click's weight halves every 14 days. Ranking uses at most 50 distinct clicked tasks from the last 90 days. Active bookmarks do not decay; removing one removes its signal. These are initial heuristic weights, not learned or validated quality estimates.
 
 Only explicit task-card opens create clicks; automatic selection, rendering, and filters do not. PostgreSQL stores the latest timestamp for each team/task pair using an atomic upsert, so repeated or concurrent clicks do not multiply its weight. Older rows remain stored but do not affect ranking. The reset action deletes the team's click records. Editing focus updates the existing team interests; skills and technologies stay intact. Startup creates the new `task_clicks` table without modifying existing table columns.
 
@@ -16,6 +16,11 @@ The API remains an unauthenticated local demo. Settings and history belong to th
 | `PUT /api/teams/{teamId}/focus` | Saves `{interests: string[]}`; up to 12 nonblank entries of at most 80 characters; returns the team. |
 | `POST /api/teams/{teamId}/clicks/{taskId}` | Records an explicit open of a published task. |
 | `DELETE /api/teams/{teamId}/clicks` | Clears that team's click history. |
+| `GET /api/teams/{teamId}/bookmarks` | Returns saved published task IDs for the team. |
+| `PUT /api/teams/{teamId}/bookmarks/{taskId}` | Saves a published task idempotently. |
+| `DELETE /api/teams/{teamId}/bookmarks/{taskId}` | Removes a bookmark idempotently. |
+
+The “Сохранённые” catalog view applies the existing search and filters to the team's saved tasks. Bookmarks persist in PostgreSQL in the new `task_bookmarks` table and survive browser/server restarts. Saving does not count as a click. UI state changes only after the server confirms success, with retry actions on failures. Bookmark lists are shared demo-team state, not authenticated personal lists.
 
 Recommendation failures fall back to readiness ordering with a retry action. Click tracking runs asynchronously in the UI and does not block opening a task or sending a proposal.
 

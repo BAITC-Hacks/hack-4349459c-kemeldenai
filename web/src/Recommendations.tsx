@@ -9,7 +9,7 @@ export function useRecommendations(team: Team | undefined, tasks: TaskCard[]) {
   useEffect(() => {
     if (!teamId) return
     let active = true
-    setState({ teamId, items: [], error: '', loading: true })
+    setState((current) => ({ teamId, items: current.teamId === teamId ? current.items : [], error: '', loading: true }))
     api.recommendations(teamId).then((items) => {
       if (active) setState({ teamId, items, error: '', loading: false })
     }).catch(() => {

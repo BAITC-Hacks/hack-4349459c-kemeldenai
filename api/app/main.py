@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 from uuid import UUID, uuid4
 
 from api.app import ai
+from api.app.applications import router as applications_router
 from api.app.database import Base, make_engine, session_factory, utcnow
 from api.app.database import Proposal as ProposalRow
 from api.app.database import Task as TaskRow
@@ -78,6 +79,7 @@ def create_app(database_url: str | None = None, seed: bool = True) -> FastAPI:
         title="HackAlem MVP API", version="1.0.0", lifespan=lifespan, responses=error_responses
     )
     app.include_router(recommendations_router)
+    app.include_router(applications_router)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],

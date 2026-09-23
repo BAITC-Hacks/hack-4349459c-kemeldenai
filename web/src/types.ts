@@ -95,6 +95,18 @@ export interface Milestone {
   confirmedAt: string
 }
 
+export interface TeamApplication {
+  proposal: Proposal
+  taskTitle: string
+  taskAvailable: boolean
+  milestones: Milestone[]
+}
+
+export interface ApplicationsSnapshot {
+  team: Team
+  applications: TeamApplication[]
+}
+
 export const EMPTY_CARD: EditableCard = {
   title: '',
   industry: '',
