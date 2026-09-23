@@ -4,7 +4,7 @@ Runnable five-hour MVP: a business user improves and publishes a task, student t
 
 The [main task and agent handoff](docs/MAIN_TASK.md) records scope, API shapes, scoring, and the demo acceptance test. The API lives in `api/`; the React UI lives in `web/`.
 
-The [completed demo round](docs/NEXT_TASK.md) records participant entry and confirmed progress points. The [AI improvement plan](docs/AI_REQUIREMENTS.md) defines the next task-focused work packages. Each computer should branch from the latest `origin/main` for its chosen task.
+The [completed demo round](docs/NEXT_TASK.md) records participant entry and confirmed progress points. The [AI task assistant record](docs/AI_REQUIREMENTS.md) documents the next completed task-focused round and its remaining limits. Each computer should branch from the latest `origin/main` for its chosen task.
 
 ## Development database
 
@@ -68,11 +68,13 @@ Context/need split into 10 points each; contact/interaction split into 5 each. E
 
 The catalog includes **every** published card, sorted by score descending. Optional `topic` and `readiness` filters narrow it only when requested. Low scores never block proposals. A team may submit more than once, and the business may select multiple proposals, reject them, or leave them pending. No model chooses a team. After a selected team completes a stage, the business can confirm it once and award 10 persistent progress points through `POST /api/proposals/{id}/milestones`; repeats return 409.
 
-### AI clarification
+### AI task assistant
 
-Set `OPENAI_API_KEY` and optionally `OPENAI_MODEL` in the server's `.env`. The default model is `gpt-4o-mini`. The adapter makes one non-streaming request with a 12-second timeout to OpenAI's [chat completions API](https://developers.openai.com/api/reference/cli/resources/chat), using [JSON mode](https://developers.openai.com/api/docs/guides/structured-outputs). There are no retries or automatic card writes. Without a key, or on network/API/JSON failure, deterministic questions use the same schema and `source: "fallback"`. The key stays on the server; restart the API after changing `.env`.
+Set `OPENAI_API_KEY` and optionally `OPENAI_MODEL` in the server's `.env`. The default model is `gpt-4o-mini`. The adapter makes one non-streaming request with a 7-second timeout to OpenAI's [chat completions API](https://developers.openai.com/api/reference/cli/resources/chat), using [JSON mode](https://developers.openai.com/api/docs/guides/structured-outputs). There are no retries or automatic card writes. Without a key, or on network/API/JSON failure, deterministic questions use the same schema and `source: "fallback"`. The key stays on the server; restart the API after changing `.env`.
 
-The full system prompt lives in [`api/app/ai.py`](api/app/ai.py). It treats the user's description and card as untrusted data, asks three to five Russian questions using only supplied facts, requires JSON `{ "questions": [{ "field": "need", "question": "..." }] }`, and forbids invented card facts and team selection. Fields must come from the supplied missing/refinement list. Narrow description patterns deprioritize clearly stated users and current workflows without populating card fields. A complete card receives refinement questions instead. Structured contact values are omitted from provider context; free text is not automatically redacted.
+The full system prompt lives in [`api/app/ai.py`](api/app/ai.py). It treats the description and card as untrusted data, asks three to five Russian questions about gaps not already explicit in the text, and forbids invented facts and team selection. Question fields must come from the supplied missing/refinement list; complete cards receive refinement questions. The response also has `suggestedFields`: optional verbatim excerpts for empty card fields, each with matching `value` and `evidence`. Unsupported model suggestions are discarded. Narrow, exact excerpts from clear process, user, and expected-result phrases remain available locally when the provider fails. Suggestions appear for human accept, edit, or discard; neither they nor answers change the confirmed score until the business confirms the card. The structured contact field is omitted, and common email and phone patterns are redacted from bounded provider input. Pattern-based redaction is not comprehensive anonymization.
+
+Refreshing questions preserves typed answers by their target fields. Transferring an identical answer block again does not append it after line-by-line whitespace normalization; semantic paraphrases are not deduplicated. Suggestions never overwrite a nonempty card field automatically.
 
 Example request:
 
@@ -85,15 +87,16 @@ Fallback response:
 ```json
 {
   "questions": [
-    {"field":"context","question":"Как сейчас устроен процесс и в какой ситуации возникла задача?"},
     {"field":"need","question":"Какую конкретную проблему бизнеса нужно решить и почему это важно?"},
-    {"field":"users","question":"Кто будет пользоваться решением и какие действия им нужны?"}
+    {"field":"users","question":"Кто будет пользоваться решением и какие действия им нужны?"},
+    {"field":"dataMaterials","question":"Какие данные, примеры и материалы доступны команде?"}
   ],
+  "suggestedFields":[],
   "source":"fallback"
 }
 ```
 
-For invalid output such as `{"questions":null}`, the entire response falls back. With partially valid output, unknown fields, blank questions and duplicates are discarded and deterministic questions fill the response to at least three. `source: "ai"` means at least one validated model question survived. Logs report only failure class names, never the key, response body or full user input. Unit tests mock the provider, including malformed responses, and require no key or paid requests.
+For invalid output such as `{"questions":null}`, the questions fall back. With partially valid output, unknown fields, blank questions and duplicates are discarded and deterministic questions fill the response to at least three. `source: "ai"` means at least three validated model questions survived; `mixed` means partial model output was supplemented, and `fallback` means the questions were local. Logs report only failure class names, never the key, response body or full user input. Unit tests mock the provider, including malformed responses, and require no key or paid requests.
 
 ### Backend verification and handoff
 

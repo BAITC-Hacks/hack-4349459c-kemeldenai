@@ -45,8 +45,57 @@ def test_fallback_prioritizes_gaps_over_explicit_workflow_and_users():
     ],
 )
 def test_weak_or_uncertain_description_keeps_foundational_questions(description):
-    fields = [question["field"] for question in analyze(description)["questions"]]
-    assert fields == ["context", "need", "users"]
+    result = analyze(description)
+    fields = [question["field"] for question in result["questions"]]
+    assert fields == ["need", "users", "dataMaterials"]
+    assert result["suggestedFields"] == []
+
+
+@pytest.mark.parametrize("description", [
+    "Нужен общий список заказов?",
+    "Возможно, нужен прототип приложения для операторов.",
+    "Менеджеры не обрабатывают заявки вручную.",
+    "Менеджеры вручную обрабатывают заявки; контакт demo@example.test",
+])
+def test_fallback_suggestions_do_not_promote_uncertainty_or_contact_details(description):
+    result = analyze(description)
+    if "контакт" in description:
+        assert all("demo@" not in item["value"] for item in result["suggestedFields"])
+    else:
+        assert result["suggestedFields"] == []
+
+
+def test_provider_cannot_extract_a_fact_from_an_uncertain_sentence(monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "test-not-a-real-key")
+
+    async def provider(*_args):
+        return json.dumps({"questions": [], "suggestedFields": [
+            {"field": "users", "value": "Менеджеры", "evidence": "Менеджеры"},
+            {"field": "context", "value": "вручную обрабатывают заявки",
+             "evidence": "вручную обрабатывают заявки"},
+        ]})
+
+    monkeypatch.setattr(ai, "_request_model", provider)
+    result = analyze("Менеджеры вручную обрабатывают заявки?")
+    assert result["suggestedFields"] == []
+    assert result["source"] == "fallback"
+
+
+def test_verbatim_provider_evidence_can_include_sentence_punctuation(monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "test-not-a-real-key")
+    excerpt = "У отдела продаж растет очередь заказов."
+
+    async def provider(*_args):
+        return json.dumps({"questions": [], "suggestedFields": [
+            {"field": "context", "value": excerpt, "evidence": excerpt},
+        ]})
+
+    monkeypatch.setattr(ai, "_request_model", provider)
+    result = analyze(excerpt)
+    assert result["suggestedFields"] == [
+        {"field": "context", "value": excerpt, "evidence": excerpt},
+    ]
+    assert result["source"] == "mixed"
 
 
 def test_explicit_description_labels_are_respected_without_populating_card():

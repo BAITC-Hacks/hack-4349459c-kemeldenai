@@ -58,7 +58,7 @@ def test_partial_ai_questions_are_validated_deduplicated_and_filled(monkeypatch)
 
     monkeypatch.setattr(ai, "_request_model", provider)
     result = run({"context": "100 обращений в день"})
-    assert result["source"] == "ai"
+    assert result["source"] == "mixed"
     assert len(result["questions"]) >= 3
     assert result["questions"][0] == {"field": "need", "question": "Какую проблему решаем?"}
     assert len({q["question"] for q in result["questions"]}) == len(result["questions"])
@@ -81,6 +81,82 @@ def test_provider_failure_logs_no_credentials_or_input(monkeypatch, caplog):
 def test_complete_card_still_gets_three_refinement_questions():
     result = run(dict.fromkeys(ai.FIELD_QUESTIONS, "Подробная информация о задаче"))
     assert len(result["questions"]) >= 3
+
+
+def test_description_facts_remove_redundant_fallback_questions():
+    description = "Менеджеры вручную обрабатывают 100 заявок в день; нужен общий список заказов"
+    result = asyncio.run(ai.analyze_questions(description, "Торговля"))
+    assert 3 <= len(result["questions"]) <= 5
+    assert not {"context", "users"} & {item["field"] for item in result["questions"]}
+
+
+def test_only_exact_description_evidence_becomes_a_suggestion(monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "test-not-a-real-key")
+    excerpt = "Менеджеры вручную обрабатывают 100 заявок в день"
+
+    async def provider(*args):
+        payload = args[2]
+        assert "contact" not in payload["card"]
+        assert "secret@example.com" not in json.dumps(payload)
+        return json.dumps({
+            "questions": [
+                {"field": "dataMaterials", "question": "Какие данные доступны?"},
+                {"field": "successCriteria", "question": "Как измерите результат?"},
+                {"field": "constraints", "question": "Какие есть ограничения?"},
+            ],
+            "suggestedFields": [
+                {"field": "context", "value": excerpt, "evidence": excerpt},
+                {"field": "need", "value": "Придуманная экономия 50%", "evidence": excerpt},
+                {"field": "contact", "value": excerpt, "evidence": excerpt},
+            ],
+        })
+
+    monkeypatch.setattr(ai, "_request_model", provider)
+    result = asyncio.run(ai.analyze_questions(excerpt, "Торговля", {"contact": "secret@example.com"}))
+    assert result["source"] == "ai"
+    assert {item["field"] for item in result["suggestedFields"]} == {"context", "users"}
+    assert next(item for item in result["suggestedFields"] if item["field"] == "context") == {
+        "field": "context", "value": excerpt, "evidence": excerpt,
+    }
+
+
+def test_ai_cannot_repeat_explicit_description_fact(monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "test-not-a-real-key")
+
+    async def provider(*args):
+        return json.dumps({"questions": [
+            {"field": "users", "question": "Кто будет пользоваться?"},
+            {"field": "context", "question": "Как сейчас устроен процесс?"},
+            {"field": "dataMaterials", "question": "Какие данные доступны?"},
+        ]})
+
+    monkeypatch.setattr(ai, "_request_model", provider)
+    result = asyncio.run(ai.analyze_questions(
+        "Менеджеры вручную обрабатывают 100 заявок в день", "Торговля"
+    ))
+    assert not {"users", "context"} & {item["field"] for item in result["questions"]}
+    assert result["source"] == "mixed"
+
+
+def test_local_suggestions_are_verbatim_and_contact_details_are_redacted(monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "test-not-a-real-key")
+    description = (
+        "Менеджеры вручную обрабатывают 100 заявок в день; нужен общий список заказов. "
+        "Пишите на demo@example.com"
+    )
+
+    async def provider(*args):
+        payload = args[2]
+        assert "demo@example.com" not in json.dumps(payload)
+        return '{"questions": []}'
+
+    monkeypatch.setattr(ai, "_request_model", provider)
+    result = asyncio.run(ai.analyze_questions(description, "Торговля"))
+    assert result["source"] == "fallback"
+    assert {item["field"] for item in result["suggestedFields"]} == {
+        "context", "users", "expectedResult"
+    }
+    assert all(item["value"] == item["evidence"] for item in result["suggestedFields"])
 
 
 def test_provider_makes_one_bounded_server_side_call(monkeypatch):

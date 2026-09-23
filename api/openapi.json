@@ -2320,10 +2320,18 @@
             "type": "array",
             "title": "Questions"
           },
+          "suggestedFields": {
+            "items": {
+              "$ref": "#/components/schemas/SuggestedField"
+            },
+            "type": "array",
+            "title": "Suggestedfields"
+          },
           "source": {
             "type": "string",
             "enum": [
               "ai",
+              "mixed",
               "fallback"
             ],
             "title": "Source"
@@ -2713,6 +2721,30 @@
           "reasons"
         ],
         "title": "Recommendation"
+      },
+      "SuggestedField": {
+        "properties": {
+          "field": {
+            "type": "string",
+            "title": "Field"
+          },
+          "value": {
+            "type": "string",
+            "title": "Value"
+          },
+          "evidence": {
+            "type": "string",
+            "title": "Evidence"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "field",
+          "value",
+          "evidence"
+        ],
+        "title": "SuggestedField"
       },
       "TaskCard": {
         "properties": {

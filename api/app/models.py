@@ -170,9 +170,16 @@ class Question(ApiModel):
     question: str
 
 
+class SuggestedField(ApiModel):
+    field: str
+    value: str
+    evidence: str
+
+
 class AnalyzeOutput(ApiModel):
     questions: list[Question]
-    source: Literal["ai", "fallback"]
+    suggested_fields: list[SuggestedField] = Field(default_factory=list)
+    source: Literal["ai", "mixed", "fallback"]
 
 
 class ErrorResponse(BaseModel):

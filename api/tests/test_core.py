@@ -216,21 +216,37 @@ def test_catalog_filters_and_sorts_published_cards(tmp_path):
         )
 
 
-def test_analyze_has_three_questions_and_error_envelopes(tmp_path):
+def test_analyze_has_three_questions_and_error_envelopes(tmp_path, monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "")
     with client(tmp_path) as c:
         result = c.post(
             "/api/analyze",
             json={"description": "Need a better delivery process", "industry": "Retail"},
         )
         assert result.status_code == 200
-        assert result.json()["source"] in ("ai", "fallback")
+        assert result.json()["source"] == "fallback"
         assert len(result.json()["questions"]) >= 3
+        assert "suggestedFields" in result.json()
         missing = c.get("/api/tasks/not-a-uuid")
         assert missing.status_code == 422
         assert "error" in missing.json()
         invalid = c.post("/api/tasks", json={"unexpected": "value"})
         assert invalid.status_code == 422
         assert "error" in invalid.json()
+
+
+def test_analyze_returns_grounded_suggestions_without_writing_a_card(tmp_path, monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "")
+    description = "Менеджеры вручную обрабатывают 100 заявок в день; нужен общий список заказов"
+    with client(tmp_path) as c:
+        response = c.post("/api/analyze", json={"description": description, "industry": "Торговля"})
+        assert response.status_code == 200
+        payload = response.json()
+        assert {item["field"] for item in payload["suggestedFields"]} == {
+            "context", "users", "expectedResult"
+        }
+        assert all(item["evidence"] in description for item in payload["suggestedFields"])
+        assert len(c.get("/api/tasks").json()) == 5
 
 
 def test_validation_rejects_oversize_and_non_http_urls(tmp_path):

@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { transferClarificationAnswers } from './clarificationAnswers'
+import { reconcileTaskSuggestions, removeSuggestionEdit } from './taskSuggestions'
 import { api } from './api'
 import { useBookmarks } from './bookmarks'
 import { MyApplications } from './MyApplications'
@@ -22,6 +23,7 @@ import {
   type Milestone,
   type Proposal,
   type ProposalInput,
+  type SuggestedField,
   type TaskCard,
   type Team,
 } from './types'
@@ -191,9 +193,12 @@ function App() {
   const [card, setCard] = useState<EditableCard>({ ...EMPTY_CARD })
   const [task, setTask] = useState<TaskCard | null>(null)
   const [questions, setQuestions] = useState<ClarifyingQuestion[]>([])
-  const [questionSource, setQuestionSource] = useState<'ai' | 'fallback' | null>(null)
+  const [questionSource, setQuestionSource] = useState<'ai' | 'mixed' | 'fallback' | null>(null)
+  const [suggestions, setSuggestions] = useState<SuggestedField[]>([])
+  const [suggestionEdits, setSuggestionEdits] = useState<Record<string, string>>({})
+  const [suggestionNotice, setSuggestionNotice] = useState('')
   const [clarificationReviewed, setClarificationReviewed] = useState(false)
-  const [answers, setAnswers] = useState<Record<number, string>>({})
+  const [answers, setAnswers] = useState<Record<string, string>>({})
   const [builderAction, setBuilderAction] = useState<BuilderAction | null>(null)
   const builderBusy = builderAction !== null
   const [step, setStep] = useState<BuilderStep>('description')
@@ -408,11 +413,6 @@ function App() {
   async function analyze() {
     setBuilderError('')
     setNotice('')
-    if (hasUnappliedAnswers) {
-      setStep('questions')
-      setNotice('У вас есть ответы на предыдущие вопросы. Перенесите их в карточку перед новым уточнением — так они сохранятся.')
-      return
-    }
     if (card.description.trim().length < 8) {
       setFieldErrors({ description: 'Опишите задачу: минимум 8 символов.' })
       goToField('description')
@@ -425,11 +425,18 @@ function App() {
         throw new Error('Сервер вернул меньше трёх вопросов. Повторите попытку.')
       }
       setStep('questions')
-      setQuestions(result.questions)
+      setQuestions((current) => {
+        const answered = current.filter((item) => answers[item.field]?.trim())
+        return [...answered, ...result.questions.filter((item) => !answered.some((old) => old.field === item.field))].slice(0, 5)
+      })
+      const incoming = Array.isArray(result.suggestedFields) ? result.suggestedFields : []
+      const refreshedSuggestions = reconcileTaskSuggestions(suggestions, incoming, suggestionEdits)
+      setSuggestions(refreshedSuggestions.suggestions)
+      setSuggestionEdits(refreshedSuggestions.edits)
+      setSuggestionNotice('')
       setClarificationReviewed(false)
       setQuestionSource(result.source)
-      setAnswers({})
-      setNotice('Вопросы готовы. Ответы можно перенести в редактируемую карточку.')
+      setNotice('Вопросы готовы. Ответы и предложения можно проверить перед подтверждением карточки.')
     } catch (error) {
       setBuilderError(errorMessage(error))
     } finally {
@@ -443,6 +450,26 @@ function App() {
     setClarificationReviewed(true)
     setStep('review')
     setNotice('Ответы перенесены. Проверьте карточку перед подтверждением.')
+  }
+
+  function acceptSuggestion(suggestion: SuggestedField) {
+    const value = (suggestionEdits[suggestion.field] ?? suggestion.value).trim()
+    if (!value) {
+      setSuggestionNotice('Введите текст предложения или отклоните его.')
+      return
+    }
+    if (card[suggestion.field].trim()) {
+      setSuggestionNotice(`Поле «${fieldLabels[suggestion.field]}» уже заполнено. Проверьте его вручную.`)
+      return
+    }
+    setCard((current) => ({ ...current, [suggestion.field]: value }))
+    dismissSuggestion(suggestion.field)
+    setSuggestionNotice(`Предложение добавлено в поле «${fieldLabels[suggestion.field]}». Проверьте его перед подтверждением.`)
+  }
+
+  function dismissSuggestion(field: CardField) {
+    setSuggestions((current) => current.filter((item) => item.field !== field))
+    setSuggestionEdits((current) => removeSuggestionEdit(current, field))
   }
 
   function keepTask(next: TaskCard) {
@@ -537,6 +564,9 @@ function App() {
     setTask(null)
     setCard({ ...EMPTY_CARD })
     setQuestions([])
+    setSuggestions([])
+    setSuggestionEdits({})
+    setSuggestionNotice('')
     setClarificationReviewed(false)
     setAnswers({})
     setBuilderError('')
@@ -700,14 +730,17 @@ function App() {
                   {step === 'questions' && questions.length > 0 && <section className="work-section work-section--questions step-panel" aria-labelledby="questions-title">
                     <div className="section-heading"><span className="section-heading__number">02</span><div><h2 ref={stepHeading} tabIndex={-1} id="questions-title">Что стоит уточнить</h2><p>Ответы останутся редактируемыми перед подтверждением карточки.</p></div></div>
                     <div className="question-list">
-                      {questions.map((item, index) => <label className="question" key={`${item.field}-${index}`}><span className="question__number">{String(index + 1).padStart(2, '0')}</span><span className="question__body"><span className="question__title">{item.question}</span><textarea disabled={fieldsDisabled} rows={2} value={answers[index] ?? ''} onChange={(event) => setAnswers((current) => ({ ...current, [index]: event.target.value }))} placeholder="Ваш ответ" /></span></label>)}
+                      {questions.map((item, index) => <label className="question" key={item.field}><span className="question__number">{String(index + 1).padStart(2, '0')}</span><span className="question__body"><span className="question__title">{item.question}</span><textarea disabled={fieldsDisabled} rows={2} value={answers[item.field] ?? ''} onChange={(event) => setAnswers((current) => ({ ...current, [item.field]: event.target.value }))} placeholder="Ваш ответ" /></span></label>)}
                     </div>
-                    <p className="muted question-source">{questionSource === 'fallback' ? 'AI сейчас недоступен. Мы подготовили стандартные вопросы — вы можете продолжить.' : 'Вопросы подготовлены AI. Проверьте ответы перед переносом в карточку.'}</p>
+                    <p className="muted question-source">{questionSource === 'fallback' ? 'AI сейчас недоступен. Мы подготовили стандартные вопросы — вы можете продолжить.' : questionSource === 'mixed' ? 'AI подготовил часть анализа; недостающие вопросы добавлены автоматически. Проверьте ответы перед переносом.' : 'Вопросы подготовлены AI. Проверьте ответы перед переносом в карточку.'}</p>
+                    <button className="button button--text" type="button" disabled={fieldsDisabled} onClick={() => void analyze()}>Обновить вопросы, сохранив ответы</button>
                   </section>}
 
                   {step === 'review' && <section className="work-section step-panel" aria-labelledby="review-title">
                     <fieldset disabled={fieldsDisabled}>
                     <div className="section-heading"><span className="section-heading__number">03</span><div><h2 ref={stepHeading} tabIndex={-1} id="review-title">Карточка задачи</h2><p>Проверьте каждое поле. Баллы начисляются после вашего подтверждения.</p></div></div>
+                    {suggestions.length > 0 && <div className="suggestion-list" aria-label="Предложения для карточки"><h3>Предложения из вашего описания</h3><p className="muted">Проверьте источник и при необходимости измените текст. Пустое поле заполнится только после вашего выбора.</p>{suggestions.map((suggestion) => <div className="suggestion-card" key={suggestion.field}><strong>{fieldLabels[suggestion.field]}</strong><p className="suggestion-evidence">Источник: «{suggestion.evidence}»</p><textarea aria-label={`Предложение для поля ${fieldLabels[suggestion.field]}`} rows={2} value={suggestionEdits[suggestion.field] ?? suggestion.value} onChange={(event) => setSuggestionEdits((current) => ({ ...current, [suggestion.field]: event.target.value }))} /><div className="suggestion-actions"><button type="button" className="button button--outline" onClick={() => acceptSuggestion(suggestion)}>Добавить в карточку</button><button type="button" className="button button--text" onClick={() => dismissSuggestion(suggestion.field)}>Отклонить</button></div></div>)}</div>}
+                    {suggestionNotice && <p className="inline-note" role="status">{suggestionNotice}</p>}
                     <TextInput id="card-title" error={fieldErrors.title} label="Название задачи" value={card.title} onChange={(value) => updateCard('title', value)} placeholder={fieldHints.title} required />
                     <div className="two-columns">
                       {(['context', 'need', 'users', 'dataMaterials', 'constraints', 'expectedResult', 'successCriteria', 'contact', 'interaction'] as CardField[]).map((field) => <Field key={field} id={`card-${field}`} label={fieldLabels[field]} value={card[field]} onChange={(value) => updateCard(field, value)} hint={fieldHints[field]} />)}

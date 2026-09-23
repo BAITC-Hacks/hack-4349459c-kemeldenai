@@ -1,4 +1,14 @@
-# Verification after pulling main — 23 September 2026
+# Demo verification — 23 September 2026
+
+## Integrated main update
+
+Combined the demo fixes with `origin/main` at `495c623`, retaining the grounded task assistant: three to five questions, verbatim evidence suggestions, accept/edit/discard, contact-pattern redaction, mixed provenance, and a seven-second timeout. Answers remain attached to their fields across refresh and use normalized multiline deduplication. Uncertain statements and questions do not become suggested facts. Refresh now replaces stale suggestion evidence and edits instead of preserving obsolete text.
+
+The combined revision passed **109 backend tests (95.61% combined coverage), 16 frontend tests, Python lint, and the frontend build**. PostgreSQL acceptance passed 27 requests, restart persistence, seed idempotence, and concurrent milestone protection. The merged schema includes all 18 API paths.
+
+Focused browser acceptance passed with fallback: existing answers survive question refresh; suggestions show exact evidence; changing the description replaces old evidence and edited text; suggestions can be edited, accepted, and discarded; accepted text earns points only after card confirmation (30 points in the verification task). Existing demo records were preserved. Live-provider results and the full browser proposal journey below describe the earlier checks, not a new live request or repeated timed presentation.
+
+## Earlier demo-fix verification
 
 Baseline: `origin/main` at `f519e84`, including task summaries, saved proposal drafts, recommendation controls, and guided proposal writing. Fixes were developed on `codex/demo-spec-fixes`.
 
@@ -34,6 +44,6 @@ Focused tests were run before implementation: scoring regressions first failed, 
 
 The mandatory functional journey is implemented and passes the checks above: business clarification and editable confirmation, deterministic rating growth, publication and open catalog, proposals, manual selection, and confirmed progress. Seed tests cover the required five-record datasets. Provider failure/malformed-output handling is covered by tests and the browser fallback path.
 
-Remaining limits: a timed five-minute rehearsal was not performed in this round; one live provider example does not prove broad question quality; matching and proposal templates are deterministic helpers. Evidence-backed business-card suggestions are an optional next feature, not part of these fixes. Demo identities remain shared synthetic profiles without authentication, as scoped for the MVP.
+At this earlier checkpoint, evidence-backed business-card suggestions were still a next feature; they are included in the integrated main update above. A timed five-minute rehearsal remains outstanding, one live provider example does not prove broad question quality, and matching and proposal templates are deterministic helpers. Demo identities remain shared synthetic profiles without authentication, as scoped for the MVP.
 
 The test run reports one upstream Starlette/httpx deprecation warning; all tests pass.
