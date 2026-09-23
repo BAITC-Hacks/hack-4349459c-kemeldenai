@@ -81,6 +81,14 @@ export interface ProposalInput {
   prototypeUrl: string
 }
 
+export interface Milestone {
+  id: string
+  proposalId: string
+  description: string
+  pointsAwarded: number
+  confirmedAt: string
+}
+
 export const EMPTY_CARD: EditableCard = {
   title: '',
   industry: '',

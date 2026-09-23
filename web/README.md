@@ -1,6 +1,6 @@
 # Agent B frontend
 
-Russian-language React/Vite/TypeScript UI for the business task builder, readiness score, student catalog, proposal submission, and manual business decision.
+Russian-language React/Vite/TypeScript UI for demo participant entry, the business task builder, readiness score, student catalog, proposal submission, manual business decisions, and confirmed progress.
 
 ## Run
 
@@ -18,14 +18,14 @@ The frontend calls only endpoints in [the shared contract](../docs/MAIN_TASK.md)
 
 ## Demo path
 
-1. In **Для бизнеса**, enter a short description and request clarification questions.
+1. On **Демо-вход**, choose the prefilled business profile. Enter a short description and request clarification questions.
 2. Answer at least three questions, transfer answers to the editable card, and confirm it. Add more detail and confirm again to show the rating increase.
-3. Publish the task. In **Для студентов**, find it in the catalog and submit an idea, plan, timeline, and prototype link for a team.
-4. Return to **Для бизнеса → Отклики команд** and manually select or reject the proposal.
+3. Publish the task. Choose **Сменить участника** and enter as a seeded student team (Data Nomads is preselected). Find the task and submit an idea, plan, timeline, and HTTP(S) prototype link. The active team is attached automatically.
+4. Return as business, manually select or reject the proposal, and confirm one completed stage for a selected team. The stage awards 10 progress points once; the student team sees its updated total after switching back.
 
-The role switch is for the hackathon demo; it is not authentication. A published task remains visible and accepts proposals even at a low readiness score.
+The participant entry is for the hackathon demo; it is not authentication or server-side access control. Its selection is saved on this device. A published task remains visible and accepts proposals even at a low readiness score. The confirmed-stage UI uses the `GET` and `POST /api/proposals/{id}/milestones` contract in [docs/NEXT_TASK.md](../docs/NEXT_TASK.md); it becomes functional against PostgreSQL when Agent A's next branch is integrated.
 
-Review screenshots with synthetic data: [desktop catalog](screenshots/student-catalog-desktop.png) and [mobile catalog](screenshots/student-catalog-mobile.png).
+Review screenshots with synthetic data: [demo entry desktop](screenshots/demo-entry-desktop.png), [demo entry mobile](screenshots/demo-entry-mobile.png), [selected team's confirmed stage](screenshots/milestone-desktop.png), [desktop catalog](screenshots/student-catalog-desktop.png), and [mobile catalog](screenshots/student-catalog-mobile.png). See [HANDOFF.md](HANDOFF.md) for the branch validation and integration notes.
 
 ## Guided UI
 
@@ -33,7 +33,7 @@ The business builder separates description, clarification, card review, and publ
 
 Starting a new task asks before discarding unsaved card content or unanswered clarification work. A browser unload warning also covers unsaved card content, clarification answers, and proposal drafts. These drafts are kept in memory, not autosaved; saved task IDs are restored from local storage as before.
 
-The student catalog includes keyword search, topic/readiness filters, and a reset control. At widths of 820px or below, selecting a task opens its details in place of the list, with a back button. Proposal drafts are retained separately for each task during the session. Required fields show inline errors, focus moves to the first invalid field, and successful submission is confirmed beside the form.
+The student catalog includes keyword search, topic/readiness filters, and a reset control. At widths of 820px or below, selecting a task opens its details in place of the list, with a back button. Proposal drafts are retained separately for each team and task during the session. Required fields show inline errors, focus moves to the first invalid field, and successful submission is confirmed beside the form.
 
 ### Browser regression checks
 

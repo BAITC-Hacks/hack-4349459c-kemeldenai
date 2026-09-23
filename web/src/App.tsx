@@ -1,6 +1,9 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { api } from './api'
 import { useAnimatedScore, useReducedMotion } from './motion'
+import { DemoEntry } from './DemoEntry'
+import { clearDemoPersona, readDemoPersona, saveDemoPersona, type DemoPersona } from './demoSession'
+import { MilestonePanel } from './MilestonePanel'
 import {
   CARD_FIELDS,
   EMPTY_CARD,
@@ -8,6 +11,7 @@ import {
   type CardField,
   type ClarifyingQuestion,
   type EditableCard,
+  type Milestone,
   type Proposal,
   type ProposalInput,
   type TaskCard,
@@ -24,6 +28,7 @@ const builderSteps: { key: BuilderStep; label: string }[] = [
   { key: 'review', label: 'Карточка' },
   { key: 'publish', label: 'Публикация' },
 ]
+type ProposalDraft = Omit<ProposalInput, 'teamId'>
 
 const fieldLabels: Record<CardField, string> = {
   title: 'Название задачи',
@@ -79,8 +84,8 @@ const decisionLabels = {
   rejected: 'Отклонена',
 } as const
 
-const EMPTY_PROPOSAL: ProposalInput = {
-  teamId: '', idea: '', plan: '', timeline: '', prototypeUrl: '',
+const EMPTY_PROPOSAL: ProposalDraft = {
+  idea: '', plan: '', timeline: '', prototypeUrl: '',
 }
 
 function errorMessage(error: unknown) {
@@ -140,7 +145,7 @@ function Field({ label, value, onChange, hint, rows = 3, required = false, id, e
   return (
     <label className="field">
       <span className="field__label">{label}{required && <span className="field__required"> *</span>}</span>
-      <textarea id={id} rows={rows} value={value} disabled={disabled} aria-required={required} aria-invalid={!!error} aria-describedby={error ? helpId : undefined} onChange={(event) => onChange(event.target.value)} placeholder={hint} />
+      <textarea id={id} rows={rows} value={value} disabled={disabled} required={required} aria-required={required} aria-invalid={!!error} aria-describedby={error ? helpId : undefined} onChange={(event) => onChange(event.target.value)} placeholder={hint} />
       {(required || error) && <span id={helpId} className="field__error field__error-slot" aria-hidden={!error}>{error || '\u00a0'}</span>}
     </label>
   )
@@ -161,7 +166,7 @@ function TextInput({ label, value, onChange, placeholder, type = 'text', require
   return (
     <label className="field">
       <span className="field__label">{label}{required && <span className="field__required"> *</span>}</span>
-      <input id={id} type={type} value={value} disabled={disabled} aria-required={required} aria-invalid={!!error} aria-describedby={error ? helpId : undefined} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} />
+      <input id={id} type={type} value={value} disabled={disabled} required={required} aria-required={required} aria-invalid={!!error} aria-describedby={error ? helpId : undefined} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} />
       {(required || error) && <span id={helpId} className="field__error field__error-slot" aria-hidden={!error}>{error || '\u00a0'}</span>}
     </label>
   )
@@ -171,7 +176,7 @@ function App() {
   const reducedMotion = useReducedMotion()
   const catalogScroll = useRef(0)
   const [savedFeedback, setSavedFeedback] = useState(false)
-  const [workspace, setWorkspace] = useState<Workspace>('business')
+  const [persona, setPersona] = useState<DemoPersona | null>(readDemoPersona)
   const [businessPage, setBusinessPage] = useState<BusinessPage>('builder')
   const [card, setCard] = useState<EditableCard>({ ...EMPTY_CARD })
   const [task, setTask] = useState<TaskCard | null>(null)
@@ -183,19 +188,21 @@ function App() {
   const builderBusy = builderAction !== null
   const [step, setStep] = useState<BuilderStep>('description')
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<CardField, string>>>({})
-  const [proposalFieldErrors, setProposalFieldErrors] = useState<Partial<Record<keyof ProposalInput, string>>>({})
+  const [proposalFieldErrors, setProposalFieldErrors] = useState<Partial<Record<keyof ProposalDraft, string>>>({})
   const [focusField, setFocusField] = useState<CardField | null>(null)
   const [showNewTaskPrompt, setShowNewTaskPrompt] = useState(false)
   const stepHeading = useRef<HTMLHeadingElement>(null)
   const previousStep = useRef(step)
   const [search, setSearch] = useState('')
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false)
-  const [proposalDrafts, setProposalDrafts] = useState<Record<string, ProposalInput>>({})
+  const [proposalDrafts, setProposalDrafts] = useState<Record<string, ProposalDraft>>({})
   const [builderError, setBuilderError] = useState('')
   const [notice, setNotice] = useState('')
 
   const [tasks, setTasks] = useState<TaskCard[]>([])
   const [teams, setTeams] = useState<Team[]>([])
+  const [teamsLoading, setTeamsLoading] = useState(true)
+  const [teamsError, setTeamsError] = useState('')
   const [catalogLoading, setCatalogLoading] = useState(true)
   const [catalogError, setCatalogError] = useState('')
   const [topicFilter, setTopicFilter] = useState('')
@@ -203,7 +210,7 @@ function App() {
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
   const [proposalBusy, setProposalBusy] = useState(false)
   const [proposalError, setProposalError] = useState('')
-  const [proposalSuccessTaskId, setProposalSuccessTaskId] = useState<string | null>(null)
+  const [proposalSuccessKey, setProposalSuccessKey] = useState<string | null>(null)
 
   const [businessTaskId, setBusinessTaskId] = useState('')
   const [proposals, setProposals] = useState<Proposal[]>([])
@@ -214,6 +221,8 @@ function App() {
   const [proposalsError, setProposalsError] = useState('')
   const [decidingId, setDecidingId] = useState('')
 
+  const activeTeam = persona?.role === 'student' ? teams.find((team) => team.id === persona.teamId) : undefined
+  const workspace: Workspace | null = persona?.role === 'business' ? 'business' : activeTeam ? 'student' : null
   const dirty = CARD_FIELDS.some((field) => card[field] !== (task?.[field] ?? ''))
   const [restorePending, setRestorePending] = useState(() => !!localStorage.getItem('hackalem.currentTaskId'))
   const fieldsDisabled = builderBusy || restorePending
@@ -231,16 +240,17 @@ function App() {
   ).sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
   const selectedTask = visibleTasks.find((item) => item.id === selectedTaskId) ?? visibleTasks[0] ?? null
 
-  const proposalForm = selectedTask ? proposalDrafts[selectedTask.id] ?? EMPTY_PROPOSAL : EMPTY_PROPOSAL
-  function setProposalForm(update: ProposalInput | ((current: ProposalInput) => ProposalInput)) {
-    if (!selectedTask) return
-    setProposalDrafts((current) => ({ ...current, [selectedTask.id]: typeof update === 'function' ? update(current[selectedTask.id] ?? EMPTY_PROPOSAL) : update }))
+  const proposalDraftKey = selectedTask && activeTeam ? `${activeTeam.id}:${selectedTask.id}` : ''
+  const proposalForm = proposalDrafts[proposalDraftKey] ?? EMPTY_PROPOSAL
+  function setProposalForm(update: ProposalDraft | ((current: ProposalDraft) => ProposalDraft)) {
+    if (!proposalDraftKey) return
+    setProposalDrafts((current) => ({ ...current, [proposalDraftKey]: typeof update === 'function' ? update(current[proposalDraftKey] ?? EMPTY_PROPOSAL) : update }))
   }
 
-  function updateProposal(field: keyof ProposalInput, value: string) {
+  function updateProposal(field: keyof ProposalDraft, value: string) {
     setProposalForm((current) => ({ ...current, [field]: value }))
     setProposalFieldErrors((current) => ({ ...current, [field]: undefined }))
-    setProposalSuccessTaskId(null)
+    setProposalSuccessKey(null)
   }
 
   function openTask(id: string) {
@@ -310,10 +320,9 @@ function App() {
     setCatalogLoading(true)
     setCatalogError('')
     try {
-      const [next, nextTeams] = await Promise.all([api.tasks(), api.teams()])
+      const next = await api.tasks()
       if (requestId !== catalogRequest.current) return
       setTasks(next)
-      setTeams(nextTeams)
       setProposalsRefresh((current) => current + 1)
       setSelectedTaskId((current) => current && next.some((item) => item.id === current)
         ? current
@@ -328,8 +337,29 @@ function App() {
     }
   }
 
+  async function refreshTeams() {
+    setTeamsLoading(true)
+    setTeamsError('')
+    try {
+      const next = await api.teams()
+      setTeams(next)
+      setPersona((current) => {
+        if (current?.role === 'student' && !next.some((team) => team.id === current.teamId)) {
+          clearDemoPersona()
+          return null
+        }
+        return current
+      })
+    } catch (error) {
+      setTeamsError(errorMessage(error))
+    } finally {
+      setTeamsLoading(false)
+    }
+  }
+
   useEffect(() => {
     void refreshCatalog()
+    void refreshTeams()
     const savedId = localStorage.getItem('hackalem.currentTaskId')
     if (savedId) {
       void api.task(savedId).then((saved) => {
@@ -496,23 +526,65 @@ function App() {
     setBusinessPage('builder')
   }
 
-  async function submitProposal(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    if (!selectedTask) return
+  function enterBusiness() {
+    const next: DemoPersona = { version: 1, role: 'business' }
+    saveDemoPersona(next)
+    setPersona(next)
+    setBusinessPage(task?.status === 'published' ? 'responses' : 'builder')
+    if (task?.status === 'published') void refreshCatalog()
+  }
+
+  function enterStudent(teamId: string) {
+    if (!teams.some((team) => team.id === teamId)) return
+    const next: DemoPersona = { version: 1, role: 'student', teamId }
+    saveDemoPersona(next)
+    setPersona(next)
+    setProposalFieldErrors({})
+    setProposalSuccessKey(null)
+    setProposalError('')
+    void refreshCatalog()
+    void refreshTeams()
+  }
+
+  function changeParticipant() {
+    clearDemoPersona()
+    setPersona(null)
+    setProposalFieldErrors({})
+    setProposalSuccessKey(null)
     setProposalError('')
     setNotice('')
-    if (!proposalForm.teamId || !proposalForm.idea.trim() || !proposalForm.plan.trim() || !proposalForm.timeline.trim()) {
-      const errors = Object.fromEntries((['teamId', 'idea', 'plan', 'timeline'] as const).filter((key) => !proposalForm[key].trim()).map((key) => [key, key === 'teamId' ? 'Выберите команду.' : 'Заполните это поле.']))
+  }
+
+  function milestoneConfirmed(milestone: Milestone) {
+    setNotice(`Этап подтверждён. Команде начислено ${milestone.pointsAwarded} баллов.`)
+    void refreshTeams()
+  }
+
+  async function submitProposal(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!selectedTask || !activeTeam) return
+    setProposalError('')
+    setNotice('')
+    if (!proposalForm.idea.trim() || !proposalForm.plan.trim() || !proposalForm.timeline.trim() || !proposalForm.prototypeUrl.trim()) {
+      const errors = Object.fromEntries((['idea', 'plan', 'timeline', 'prototypeUrl'] as const).filter((field) => !proposalForm[field].trim()).map((field) => [field, 'Заполните это поле.']))
       setProposalFieldErrors(errors)
       document.getElementById(`proposal-${Object.keys(errors)[0]}`)?.focus()
       return
     }
+    try {
+      const url = new URL(proposalForm.prototypeUrl.trim())
+      if (url.protocol !== 'http:' && url.protocol !== 'https:') throw new Error()
+    } catch {
+      setProposalFieldErrors({ prototypeUrl: 'Укажите адрес http:// или https://.' })
+      document.getElementById('proposal-prototypeUrl')?.focus()
+      return
+    }
     setProposalBusy(true)
     try {
-      await api.submitProposal(selectedTask.id, proposalForm)
+      await api.submitProposal(selectedTask.id, { ...proposalForm, teamId: activeTeam.id, prototypeUrl: proposalForm.prototypeUrl.trim() })
       setProposalForm({ ...EMPTY_PROPOSAL })
       setProposalFieldErrors({})
-      setProposalSuccessTaskId(selectedTask.id)
+      setProposalSuccessKey(proposalDraftKey)
     } catch (error) {
       setProposalError(errorMessage(error))
     } finally {
@@ -534,6 +606,10 @@ function App() {
     }
   }
 
+  if (!workspace) {
+    return <DemoEntry teams={teams} teamsLoading={teamsLoading} teamsError={teamsError} onRetryTeams={() => void refreshTeams()} onBusiness={enterBusiness} onStudent={enterStudent} />
+  }
+
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -541,10 +617,7 @@ function App() {
           <span className="brand__mark">S<span>.</span></span>
           <span className="brand__name">AI Sana <small>Практические задачи</small></span>
         </div>
-        <nav className="role-switch" aria-label="Режим работы">
-          <button type="button" className={workspace === 'business' ? 'is-active' : ''} aria-current={workspace === 'business' ? 'page' : undefined} onClick={() => { setWorkspace('business'); setNotice('') }}>Для бизнеса</button>
-          <button type="button" className={workspace === 'student' ? 'is-active' : ''} aria-current={workspace === 'student' ? 'page' : undefined} onClick={() => { setWorkspace('student'); setNotice(''); void refreshCatalog() }}>Для студентов</button>
-        </nav>
+        <div className="persona-header"><span><small>{workspace === 'business' ? 'БИЗНЕС' : 'КОМАНДА'}</small><strong>{workspace === 'business' ? 'Демо-компания' : activeTeam?.name}</strong>{workspace === 'student' && <em>{activeTeam?.progressPoints ?? 0} баллов</em>}</span><button className="button button--outline" type="button" disabled={builderBusy || proposalBusy} onClick={changeParticipant}>Сменить участника</button></div>
         <span className="topbar__caption">Открытый выбор команд</span>
       </header>
 
@@ -566,6 +639,7 @@ function App() {
           <button className="button button--outline" type="button" onClick={newTask}>Начать без сохранения</button>
         </div>}
         {notice && <div className="notice" role="status"><span>{notice}</span><button type="button" aria-label="Закрыть уведомление" onClick={() => setNotice('')}>×</button></div>}
+        {workspace === 'student' && activeTeam && <div className="team-banner"><div><span>Вы вошли как команда</span><strong>{activeTeam.name}</strong><small>{activeTeam.skills.join(' · ')}</small></div><div className="team-banner__points"><strong>{activeTeam.progressPoints}</strong><span>баллов прогресса</span></div></div>}
 
         {workspace === 'business' ? (
           <>
@@ -628,7 +702,7 @@ function App() {
                       {step === 'description' && <><button className="button button--text" type="button" disabled={fieldsDisabled} onClick={() => setStep('review')}>Заполнить самостоятельно</button><button className="button button--dark" type="button" disabled={fieldsDisabled} onClick={() => void analyze()}><BusyLabel busy={builderAction === 'analyze'} idle="Получить вопросы" pending="Готовим вопросы…" /> <ArrowIcon /></button></>}
                       {step === 'questions' && <button className="button button--dark" type="button" disabled={fieldsDisabled} onClick={applyAnswers}>{Object.values(answers).some((value) => value.trim()) ? 'Перенести ответы и продолжить' : 'Продолжить без ответов'} <ArrowIcon /></button>}
                       {step === 'review' && <button className="button button--dark" type="button" onClick={() => void confirm()} disabled={fieldsDisabled}><BusyLabel busy={builderAction === 'confirm'} idle={task?.confirmedAt ? 'Подтвердить изменения' : 'Подтвердить карточку'} pending="Подтверждаем…" /> <ArrowIcon /></button>}
-                      {step === 'publish' && <><button className="button button--outline" type="button" disabled={fieldsDisabled} onClick={() => setStep('review')}>Редактировать карточку</button>{task?.status !== 'published' ? <button className="button button--accent" type="button" onClick={() => void publish()} aria-describedby="publish-help" disabled={fieldsDisabled || !publishReady}><BusyLabel busy={builderAction === 'publish'} idle="Опубликовать" pending="Публикуем…" /> <ArrowIcon /></button> : <button className="button button--dark" type="button" onClick={() => { setWorkspace('student'); setSelectedTaskId(task.id); setSearch(''); setTopicFilter(''); setReadinessFilter(''); setMobileDetailOpen(true); void refreshCatalog() }}>Открыть в каталоге <ArrowIcon /></button>}</>}
+                      {step === 'publish' && <><button className="button button--outline" type="button" disabled={fieldsDisabled} onClick={() => setStep('review')}>Редактировать карточку</button>{task?.status !== 'published' ? <button className="button button--accent" type="button" onClick={() => void publish()} aria-describedby="publish-help" disabled={fieldsDisabled || !publishReady}><BusyLabel busy={builderAction === 'publish'} idle="Опубликовать" pending="Публикуем…" /> <ArrowIcon /></button> : <button className="button button--dark" type="button" onClick={() => { changeParticipant(); setSelectedTaskId(task.id); setSearch(''); setTopicFilter(''); setReadinessFilter(''); setMobileDetailOpen(true); void refreshCatalog() }}>Открыть как команда <ArrowIcon /></button>}</>}
                     </div>
                     {step === 'publish' && task?.status !== 'published' && <p id="publish-help" className="builder-actionbar__help">{publishReady ? 'После публикации задачу увидят все команды.' : 'Сначала подтвердите текущую версию карточки.'}</p>}
                   </div>
@@ -657,7 +731,7 @@ function App() {
                 {proposalsLoading && !visibleProposals.length && <LoadingCards label="Загружаем отклики…" count={2} />}
                 {proposalsError && <div className="error-message" role="alert"><span>{proposalsError}</span><button className="button button--outline" type="button" onClick={() => setProposalsRefresh((current) => current + 1)}>Попробовать снова</button></div>}
                 {!proposalsLoading && businessTaskId && !visibleProposals.length && !proposalsError && <p className="state-message">На эту задачу ещё нет предложений.</p>}
-                <div className="proposal-list" aria-busy={proposalsLoading}>{visibleProposals.map((item) => <article className="proposal-card" key={item.id}><div className="proposal-card__head"><div><p className="eyebrow">ПРЕДЛОЖЕНИЕ КОМАНДЫ</p><h3>{teams.find((team) => team.id === item.teamId)?.name ?? 'Команда'}</h3></div><span className={`decision decision--${item.decision}`}>{decisionLabels[item.decision]}</span></div><div className="proposal-card__content"><div><span>Идея решения</span><p>{item.idea}</p></div><div><span>План работы</span><p>{item.plan}</p></div><div><span>Срок</span><p>{item.timeline}</p></div><div><span>Прототип</span><p><PrototypeLink url={item.prototypeUrl} /></p></div></div><div className="proposal-card__actions"><button className="button button--accent" type="button" disabled={decidingId === item.id || item.decision === 'selected'} onClick={() => void decide(item, 'selected')}>Выбрать команду</button><button className="button button--outline" type="button" disabled={decidingId === item.id || item.decision === 'rejected'} onClick={() => void decide(item, 'rejected')}>Отклонить</button></div></article>)}</div>
+                <div className="proposal-list" aria-busy={proposalsLoading}>{visibleProposals.map((item) => <article className="proposal-card" key={item.id}><div className="proposal-card__head"><div><p className="eyebrow">ПРЕДЛОЖЕНИЕ КОМАНДЫ</p><h3>{teams.find((team) => team.id === item.teamId)?.name ?? 'Команда'}</h3></div><span className={`decision decision--${item.decision}`}>{decisionLabels[item.decision]}</span></div><div className="proposal-card__content"><div><span>Идея решения</span><p>{item.idea}</p></div><div><span>План работы</span><p>{item.plan}</p></div><div><span>Срок</span><p>{item.timeline}</p></div><div><span>Прототип</span><p><PrototypeLink url={item.prototypeUrl} /></p></div></div><div className="proposal-card__actions"><button className="button button--accent" type="button" disabled={decidingId === item.id || item.decision === 'selected'} onClick={() => void decide(item, 'selected')}>Выбрать команду</button><button className="button button--outline" type="button" disabled={decidingId === item.id || item.decision === 'rejected'} onClick={() => void decide(item, 'rejected')}>Отклонить</button></div>{item.decision === 'selected' && <MilestonePanel proposalId={item.id} onConfirmed={milestoneConfirmed} />}</article>)}</div>
               </section>
             )}
           </>
@@ -670,7 +744,7 @@ function App() {
             {!catalogLoading && !visibleTasks.length && !catalogError && <p className="state-message">{search || topicFilter || readinessFilter ? 'Ничего не найдено. Измените запрос или сбросьте фильтры.' : 'Опубликованных задач пока нет. Загляните позже.'}</p>}
             <div className="catalog__columns" aria-busy={catalogLoading}>
               <div className="task-list">{visibleTasks.map((item) => <button type="button" id={`task-tile-${item.id}`} key={item.id} className={`task-tile ${selectedTask?.id === item.id ? 'is-selected' : ''}`} onClick={() => openTask(item.id)} aria-pressed={selectedTask?.id === item.id}><div className="task-tile__meta"><span>{item.industry || 'Отрасль не указана'}</span><span>{item.topic || 'Без темы'}</span></div><h3>{item.title || 'Задача без названия'}</h3><p>{item.need || item.description || 'Описание появится после уточнения.'}</p><div className="task-tile__foot"><span className={`readiness readiness--${item.readiness}`}>{readinessLabels[item.readiness]}</span><strong>{item.score}<small>/100</small></strong></div></button>)}</div>
-              {selectedTask && <article id="task-detail" key={selectedTask.id} className="task-detail"><button className="button button--outline mobile-back" type="button" onClick={returnToCatalog}>← К списку задач</button><div className="task-detail__head"><span className="eyebrow">КАРТОЧКА ЗАДАЧИ</span><ScoreRing score={selectedTask.score ?? 0} compact /></div><h2 id="task-detail-title" tabIndex={-1}>{selectedTask.title || 'Задача без названия'}</h2><p className="task-detail__meta">{selectedTask.industry || 'Отрасль не указана'} · {selectedTask.topic || 'Без темы'}</p><p className="task-detail__summary">{selectedTask.description}</p><div className="task-detail__facts">{(['context', 'need', 'users', 'dataMaterials', 'constraints', 'expectedResult', 'successCriteria', 'contact', 'interaction'] as CardField[]).map((field) => <div key={field}><span>{fieldLabels[field]}</span><p>{selectedTask[field]?.trim() || 'Пока не указано'}</p></div>)}</div><div className="task-detail__bottom"><span className={`readiness readiness--${selectedTask.readiness}`}>{readinessLabels[selectedTask.readiness]}</span><p>Даже при низком рейтинге команда может отправить предложение.</p></div><form className="proposal-form" onSubmit={(event) => void submitProposal(event)}><div className="section-heading"><span className="section-heading__number">↗</span><div><h3>Предложить решение</h3><p>Опишите подход. Выбор команды останется за бизнесом.</p></div></div><label className="field"><span className="field__label">Ваша команда *</span><select id="proposal-teamId" disabled={proposalBusy} aria-required="true" aria-invalid={!!proposalFieldErrors.teamId} aria-describedby={proposalFieldErrors.teamId ? 'team-error' : undefined} value={proposalForm.teamId} onChange={(event) => updateProposal('teamId', event.target.value)}><option value="">Выберите команду</option>{teams.map((team) => <option value={team.id} key={team.id}>{team.name}</option>)}</select><span id="team-error" className="field__error field__error-slot" aria-hidden={!proposalFieldErrors.teamId}>{proposalFieldErrors.teamId || '\u00a0'}</span></label><Field id="proposal-idea" error={proposalFieldErrors.idea} disabled={proposalBusy} label="Идея решения" required value={proposalForm.idea} onChange={(value) => updateProposal('idea', value)} hint="Как вы предлагаете решить задачу?" /><Field id="proposal-plan" error={proposalFieldErrors.plan} disabled={proposalBusy} label="План работы" required value={proposalForm.plan} onChange={(value) => updateProposal('plan', value)} hint="Основные этапы работы" /><div className="two-columns"><TextInput id="proposal-timeline" error={proposalFieldErrors.timeline} disabled={proposalBusy} label="Срок" required value={proposalForm.timeline} onChange={(value) => updateProposal('timeline', value)} placeholder="Например, 2 недели" /><TextInput disabled={proposalBusy} label="Ссылка на прототип" type="url" value={proposalForm.prototypeUrl} onChange={(value) => updateProposal('prototypeUrl', value)} placeholder="https://…" /></div>{proposalSuccessTaskId === selectedTask.id && <p className="notice proposal-success" role="status"><span className="save-check" aria-hidden="true">✓</span>Предложение отправлено. Решение остаётся за представителем бизнеса.</p>}{proposalError && <p className="error-message" role="alert">{proposalError}</p>}<button className="button button--accent" disabled={proposalBusy} type="submit"><BusyLabel busy={proposalBusy} idle="Отправить предложение" pending="Отправляем…" /> <ArrowIcon /></button></form></article>}
+              {selectedTask && <article id="task-detail" key={selectedTask.id} className="task-detail"><button className="button button--outline mobile-back" type="button" onClick={returnToCatalog}>← К списку задач</button><div className="task-detail__head"><span className="eyebrow">КАРТОЧКА ЗАДАЧИ</span><ScoreRing score={selectedTask.score ?? 0} compact /></div><h2 id="task-detail-title" tabIndex={-1}>{selectedTask.title || 'Задача без названия'}</h2><p className="task-detail__meta">{selectedTask.industry || 'Отрасль не указана'} · {selectedTask.topic || 'Без темы'}</p><p className="task-detail__summary">{selectedTask.description}</p><div className="task-detail__facts">{(['context', 'need', 'users', 'dataMaterials', 'constraints', 'expectedResult', 'successCriteria', 'contact', 'interaction'] as CardField[]).map((field) => <div key={field}><span>{fieldLabels[field]}</span><p>{selectedTask[field]?.trim() || 'Пока не указано'}</p></div>)}</div><div className="task-detail__bottom"><span className={`readiness readiness--${selectedTask.readiness}`}>{readinessLabels[selectedTask.readiness]}</span><p>Даже при низком рейтинге команда может отправить предложение.</p></div><form className="proposal-form" noValidate onSubmit={(event) => void submitProposal(event)}><div className="section-heading"><span className="section-heading__number">↗</span><div><h3>Предложить решение</h3><p>Опишите подход. Выбор команды останется за бизнесом.</p></div></div><p className="proposal-form__team">Предложение отправляет команда <strong>{activeTeam?.name}</strong></p><Field id="proposal-idea" error={proposalFieldErrors.idea} disabled={proposalBusy} label="Идея решения" required value={proposalForm.idea} onChange={(value) => updateProposal('idea', value)} hint="Как вы предлагаете решить задачу?" /><Field id="proposal-plan" error={proposalFieldErrors.plan} disabled={proposalBusy} label="План работы" required value={proposalForm.plan} onChange={(value) => updateProposal('plan', value)} hint="Основные этапы работы" /><div className="two-columns"><TextInput id="proposal-timeline" error={proposalFieldErrors.timeline} disabled={proposalBusy} label="Срок" required value={proposalForm.timeline} onChange={(value) => updateProposal('timeline', value)} placeholder="Например, 2 недели" /><TextInput id="proposal-prototypeUrl" error={proposalFieldErrors.prototypeUrl} required disabled={proposalBusy} label="Ссылка на прототип" type="url" value={proposalForm.prototypeUrl} onChange={(value) => updateProposal('prototypeUrl', value)} placeholder="https://…" /></div>{proposalSuccessKey === proposalDraftKey && <p className="notice proposal-success" role="status"><span className="save-check" aria-hidden="true">✓</span>Предложение отправлено. Решение остаётся за представителем бизнеса.</p>}{proposalError && <p className="error-message" role="alert">{proposalError}</p>}<button className="button button--accent" disabled={proposalBusy} type="submit"><BusyLabel busy={proposalBusy} idle="Отправить предложение" pending="Отправляем…" /> <ArrowIcon /></button></form></article>}
             </div>
           </section>
         )}

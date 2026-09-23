@@ -1,6 +1,7 @@
 import type {
   AnalysisResult,
   EditableCard,
+  Milestone,
   Proposal,
   ProposalDecision,
   ProposalInput,
@@ -98,6 +99,14 @@ export const api = {
   decideProposal(id: string, decision: Exclude<ProposalDecision, 'pending'>) {
     return request<Proposal>(`/api/proposals/${encodeURIComponent(id)}`, {
       method: 'PATCH', body: json({ decision }),
+    })
+  },
+  milestones(proposalId: string) {
+    return requestArray<Milestone>(`/api/proposals/${encodeURIComponent(proposalId)}/milestones`)
+  },
+  confirmMilestone(proposalId: string, description: string) {
+    return request<Milestone>(`/api/proposals/${encodeURIComponent(proposalId)}/milestones`, {
+      method: 'POST', body: json({ description }),
     })
   },
 }

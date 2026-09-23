@@ -4,6 +4,8 @@ Runnable five-hour MVP: a business user improves and publishes a task, student t
 
 The [main task and agent handoff](docs/MAIN_TASK.md) records scope, API shapes, scoring, and the demo acceptance test. The API lives in `api/`; the React UI lives in `web/`.
 
+The [next A/B task](docs/NEXT_TASK.md) defines the demo participant entry and confirmed progress-points round. Both agents should branch from the latest `origin/main` before starting it.
+
 ## Development database
 
 Docker Compose starts PostgreSQL. Run the API and Vite on the host using the commands below. Each computer runs its own local database; the Git repository carries code and seed definitions, not database state.
@@ -68,7 +70,7 @@ The catalog includes **every** published card, sorted by score descending. Optio
 
 ### AI clarification
 
-Set `NVIDIA_API_KEY` and optionally `NVIDIA_MODEL` in the server's `.env`. The default model is `meta/llama-3.1-8b-instruct`. The adapter makes one non-streaming request with a 12-second timeout to NVIDIA's [chat completion API](https://docs.api.nvidia.com/nim/docs/api-quickstart). There are no retries or automatic card writes. Without a key, or on network/API/JSON failure, deterministic questions use the same schema and `source: "fallback"`.
+Set `OPENAI_API_KEY` and optionally `OPENAI_MODEL` in the server's `.env`. The default model is `gpt-4o-mini`. The adapter makes one non-streaming request with a 12-second timeout to OpenAI's [chat completions API](https://developers.openai.com/api/reference/cli/resources/chat), using [JSON mode](https://developers.openai.com/api/docs/guides/structured-outputs). There are no retries or automatic card writes. Without a key, or on network/API/JSON failure, deterministic questions use the same schema and `source: "fallback"`. The key stays on the server; restart the API after changing `.env`.
 
 The full system prompt lives in [`api/app/ai.py`](api/app/ai.py). It treats the user's description and card as untrusted data, asks Russian questions using only supplied facts, requires JSON `{ "questions": [{ "field": "need", "question": "..." }] }`, and forbids invented card facts and team selection. Fields must come from the supplied missing/refinement list. A complete card receives refinement questions instead.
 
