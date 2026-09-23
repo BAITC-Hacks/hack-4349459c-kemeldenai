@@ -4,7 +4,7 @@ Runnable five-hour MVP: a business user improves and publishes a task, student t
 
 The [main task and agent handoff](docs/MAIN_TASK.md) records scope, API shapes, scoring, and the demo acceptance test. The API lives in `api/`; the React UI lives in `web/`.
 
-The [next A/B task](docs/NEXT_TASK.md) defines the demo participant entry and confirmed progress-points round. Both agents should branch from the latest `origin/main` before starting it.
+The [completed demo round](docs/NEXT_TASK.md) records participant entry and confirmed progress points. The [AI improvement plan](docs/AI_REQUIREMENTS.md) defines the next task-focused work packages. Each computer should branch from the latest `origin/main` for its chosen task.
 
 ## Development database
 
@@ -28,7 +28,7 @@ Do not commit `.env`, API keys, or local database files. Stop the database with 
 
 The initial API and UI branches are integrated on `main`. For future parallel work, divide ownership by complete user-facing tasks rather than by frontend and backend layers. Each task includes its necessary UI, API, data, tests, and documentation. Both computers should pull the latest `origin/main`, work on separate branches, and integrate against the contract in [docs/MAIN_TASK.md](docs/MAIN_TASK.md) before merging.
 
-## Backend (Agent A)
+## Backend
 
 Python 3.11+ runs FastAPI, Pydantic validation and SQLAlchemy persistence against PostgreSQL 17. JSON uses camelCase. `/docs` is the interactive API explorer; `/openapi.json` is the machine-readable contract. All application errors use `{ "error": "..." }`. The service is a local demo without authentication: the business/student switch is a UI mode, not an authorization boundary.
 
@@ -103,7 +103,7 @@ api/.venv/bin/ruff check api
 api/.venv/bin/python -m api.verify_postgres
 ```
 
-See [`api/IMPLEMENTATION.md`](api/IMPLEMENTATION.md) for implementation steps and [`api/HANDOFF.md`](api/HANDOFF.md) for endpoint examples, PostgreSQL verification and current limitations. [`api/openapi.json`](api/openapi.json) and [`api/examples.json`](api/examples.json) are generated from the running implementation for Agent B.
+See [`api/IMPLEMENTATION.md`](api/IMPLEMENTATION.md) for the initial implementation plan and [`api/HANDOFF.md`](api/HANDOFF.md) for endpoint examples, PostgreSQL verification and current limitations. [`api/openapi.json`](api/openapi.json) and [`api/examples.json`](api/examples.json) are generated from the running implementation for any task owner changing the API or UI.
 
 The PostgreSQL check creates a uniquely named temporary schema, verifies the full API flow and persistence across application restarts, regenerates the two contract files, and removes only its own schema. It leaves application records untouched. When a provider key is configured, this command makes one live clarification call; unit tests always disable live calls.
 

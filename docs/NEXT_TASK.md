@@ -1,6 +1,8 @@
-# Next A/B round: demo personas and confirmed progress
+# Completed demo round: personas and confirmed progress
 
-The integrated MVP already demonstrates clarification, task scoring, publication, proposals, and manual team selection. The next round should make the two participant journeys feel distinct and complete the case's final result step, while keeping the live walkthrough under five minutes. Both agents branch from the latest `origin/main`; neither reuses the first-round branches.
+This document records the completed role-entry and milestone round. Its Agent A/B assignments are historical; future work is divided by complete tasks across UI, API, data, and tests as needed. See [AI_REQUIREMENTS.md](AI_REQUIREMENTS.md) for the current task-focused plan.
+
+The earlier MVP demonstrated clarification, task scoring, publication, proposals, and manual team selection. This round made the two participant journeys distinct and completed the case's final result step while keeping the live walkthrough under five minutes. The sections below preserve the original assignment and acceptance contract.
 
 ## Decision: a visible demo entry, not real authentication
 

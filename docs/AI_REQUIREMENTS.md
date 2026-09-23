@@ -46,7 +46,7 @@ Four synthetic inputs were sent to OpenAI with the private local key, and one ad
 4. Only confirmation updates the published score. AI cannot set points, invent business details, publish, or select teams.
 5. If the provider is unavailable, show the deterministic questions promptly and clearly label them as local fallback. Already typed answers remain intact.
 
-Keep the current `questions` response compatible while coordinating any additional `suggestedFields` or per-question provenance with both agents. Prefer an explicit JSON schema for the new response, then continue server-side validation; OpenAI's [Structured Outputs guide](https://developers.openai.com/api/docs/guides/structured-outputs) distinguishes schema adherence from JSON mode. Verify any `evidence` excerpt against the actual submitted text before it reaches the UI. Bound the text sent to the provider and omit contact details and other unnecessary personal data.
+Keep the current `questions` response compatible while coordinating any additional `suggestedFields` or per-question provenance between task owners. Prefer an explicit JSON schema for the new response, then continue server-side validation; OpenAI's [Structured Outputs guide](https://developers.openai.com/api/docs/guides/structured-outputs) distinguishes schema adherence from JSON mode. Verify any `evidence` excerpt against the actual submitted text before it reaches the UI. Bound the text sent to the provider and omit contact details and other unnecessary personal data.
 
 ## Acceptance examples
 
