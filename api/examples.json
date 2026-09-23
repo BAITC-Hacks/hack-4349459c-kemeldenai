@@ -20,18 +20,19 @@
     "response": {
       "questions": [
         {
-          "field": "context",
-          "question": "Как сейчас устроен процесс и в какой ситуации возникла задача?"
-        },
-        {
           "field": "need",
           "question": "Какую конкретную проблему бизнеса нужно решить и почему это важно?"
         },
         {
           "field": "users",
           "question": "Кто будет пользоваться решением и какие действия им нужны?"
+        },
+        {
+          "field": "dataMaterials",
+          "question": "Какие данные, примеры и материалы доступны команде?"
         }
       ],
+      "suggestedFields": [],
       "source": "fallback"
     }
   },
@@ -57,7 +58,7 @@
         "contact": "Руководитель службы доставки",
         "interaction": "Еженедельная встреча с руководителем.",
         "status": "published",
-        "confirmedAt": "2026-09-23T10:56:50.566173Z",
+        "confirmedAt": "2026-09-23T11:36:42.652662Z",
         "score": 100,
         "readiness": "priority",
         "breakdown": [
@@ -117,8 +118,8 @@
           }
         ],
         "missing": [],
-        "createdAt": "2026-09-23T10:56:50.573869Z",
-        "updatedAt": "2026-09-23T10:56:50.573873Z"
+        "createdAt": "2026-09-23T11:36:42.661048Z",
+        "updatedAt": "2026-09-23T11:36:42.661053Z"
       },
       {
         "id": "00000000-0000-0000-0000-0000000003ed",
@@ -136,7 +137,7 @@
         "contact": "Руководитель столовой",
         "interaction": "Еженедельный очный разбор.",
         "status": "published",
-        "confirmedAt": "2026-09-23T10:56:50.568284Z",
+        "confirmedAt": "2026-09-23T11:36:42.654650Z",
         "score": 90,
         "readiness": "priority",
         "breakdown": [
@@ -198,8 +199,8 @@
         "missing": [
           "constraints"
         ],
-        "createdAt": "2026-09-23T10:56:50.573876Z",
-        "updatedAt": "2026-09-23T10:56:50.573876Z"
+        "createdAt": "2026-09-23T11:36:42.661055Z",
+        "updatedAt": "2026-09-23T11:36:42.661056Z"
       },
       {
         "id": "00000000-0000-0000-0000-0000000003ea",
@@ -217,7 +218,7 @@
         "contact": "",
         "interaction": "",
         "status": "published",
-        "confirmedAt": "2026-09-23T10:56:50.566891Z",
+        "confirmedAt": "2026-09-23T11:36:42.653209Z",
         "score": 80,
         "readiness": "ready",
         "breakdown": [
@@ -281,8 +282,8 @@
           "contact",
           "interaction"
         ],
-        "createdAt": "2026-09-23T10:56:50.573874Z",
-        "updatedAt": "2026-09-23T10:56:50.573874Z"
+        "createdAt": "2026-09-23T11:36:42.661054Z",
+        "updatedAt": "2026-09-23T11:36:42.661054Z"
       },
       {
         "id": "00000000-0000-0000-0000-0000000003eb",
@@ -300,7 +301,7 @@
         "contact": "",
         "interaction": "Обсуждение результатов раз в две недели.",
         "status": "published",
-        "confirmedAt": "2026-09-23T10:56:50.567400Z",
+        "confirmedAt": "2026-09-23T11:36:42.653714Z",
         "score": 60,
         "readiness": "workable",
         "breakdown": [
@@ -364,8 +365,8 @@
           "successCriteria",
           "contact"
         ],
-        "createdAt": "2026-09-23T10:56:50.573875Z",
-        "updatedAt": "2026-09-23T10:56:50.573875Z"
+        "createdAt": "2026-09-23T11:36:42.661054Z",
+        "updatedAt": "2026-09-23T11:36:42.661055Z"
       },
       {
         "id": "00000000-0000-0000-0000-0000000003ec",
@@ -383,7 +384,7 @@
         "contact": "",
         "interaction": "",
         "status": "published",
-        "confirmedAt": "2026-09-23T10:56:50.567844Z",
+        "confirmedAt": "2026-09-23T11:36:42.654172Z",
         "score": 30,
         "readiness": "draft",
         "breakdown": [
@@ -450,8 +451,8 @@
           "contact",
           "interaction"
         ],
-        "createdAt": "2026-09-23T10:56:50.573875Z",
-        "updatedAt": "2026-09-23T10:56:50.573876Z"
+        "createdAt": "2026-09-23T11:36:42.661055Z",
+        "updatedAt": "2026-09-23T11:36:42.661055Z"
       }
     ]
   },
@@ -559,7 +560,7 @@
     },
     "status": 201,
     "response": {
-      "id": "9bc313b3-794c-43ea-b532-b31079898970",
+      "id": "6ede9e35-c457-461e-912a-5a687d7eaea0",
       "title": "Сервис для магазина",
       "industry": "Торговля",
       "topic": "Автоматизация",
@@ -579,17 +580,17 @@
       "readiness": "draft",
       "breakdown": [],
       "missing": [],
-      "createdAt": "2026-09-23T10:56:50.599427Z",
-      "updatedAt": "2026-09-23T10:56:50.599431Z"
+      "createdAt": "2026-09-23T11:36:42.692492Z",
+      "updatedAt": "2026-09-23T11:36:42.692495Z"
     }
   },
   {
     "method": "GET",
-    "path": "/api/tasks/9bc313b3-794c-43ea-b532-b31079898970",
+    "path": "/api/tasks/6ede9e35-c457-461e-912a-5a687d7eaea0",
     "request": null,
     "status": 200,
     "response": {
-      "id": "9bc313b3-794c-43ea-b532-b31079898970",
+      "id": "6ede9e35-c457-461e-912a-5a687d7eaea0",
       "title": "Сервис для магазина",
       "industry": "Торговля",
       "topic": "Автоматизация",
@@ -609,13 +610,13 @@
       "readiness": "draft",
       "breakdown": [],
       "missing": [],
-      "createdAt": "2026-09-23T10:56:50.599427Z",
-      "updatedAt": "2026-09-23T10:56:50.599431Z"
+      "createdAt": "2026-09-23T11:36:42.692492Z",
+      "updatedAt": "2026-09-23T11:36:42.692495Z"
     }
   },
   {
     "method": "POST",
-    "path": "/api/tasks/9bc313b3-794c-43ea-b532-b31079898970/publish",
+    "path": "/api/tasks/6ede9e35-c457-461e-912a-5a687d7eaea0/publish",
     "request": null,
     "status": 409,
     "response": {
@@ -624,7 +625,7 @@
   },
   {
     "method": "PUT",
-    "path": "/api/tasks/9bc313b3-794c-43ea-b532-b31079898970",
+    "path": "/api/tasks/6ede9e35-c457-461e-912a-5a687d7eaea0",
     "request": {
       "title": "Сервис для магазина",
       "industry": "Торговля",
@@ -642,7 +643,7 @@
     },
     "status": 200,
     "response": {
-      "id": "9bc313b3-794c-43ea-b532-b31079898970",
+      "id": "6ede9e35-c457-461e-912a-5a687d7eaea0",
       "title": "Сервис для магазина",
       "industry": "Торговля",
       "topic": "Автоматизация",
@@ -662,13 +663,13 @@
       "readiness": "draft",
       "breakdown": [],
       "missing": [],
-      "createdAt": "2026-09-23T10:56:50.599427Z",
-      "updatedAt": "2026-09-23T10:56:50.611310Z"
+      "createdAt": "2026-09-23T11:36:42.692492Z",
+      "updatedAt": "2026-09-23T11:36:42.706523Z"
     }
   },
   {
     "method": "POST",
-    "path": "/api/tasks/9bc313b3-794c-43ea-b532-b31079898970/confirm",
+    "path": "/api/tasks/6ede9e35-c457-461e-912a-5a687d7eaea0/confirm",
     "request": {
       "title": "Сервис для магазина",
       "industry": "Торговля",
@@ -686,7 +687,7 @@
     },
     "status": 200,
     "response": {
-      "id": "9bc313b3-794c-43ea-b532-b31079898970",
+      "id": "6ede9e35-c457-461e-912a-5a687d7eaea0",
       "title": "Сервис для магазина",
       "industry": "Торговля",
       "topic": "Автоматизация",
@@ -701,7 +702,7 @@
       "contact": "Менеджер демо-магазина, demo@example.org",
       "interaction": "Еженедельная проверка прототипа",
       "status": "draft",
-      "confirmedAt": "2026-09-23T10:56:50.616146Z",
+      "confirmedAt": "2026-09-23T11:36:42.712132Z",
       "score": 100,
       "readiness": "priority",
       "breakdown": [
@@ -761,17 +762,17 @@
         }
       ],
       "missing": [],
-      "createdAt": "2026-09-23T10:56:50.599427Z",
-      "updatedAt": "2026-09-23T10:56:50.616417Z"
+      "createdAt": "2026-09-23T11:36:42.692492Z",
+      "updatedAt": "2026-09-23T11:36:42.712407Z"
     }
   },
   {
     "method": "POST",
-    "path": "/api/tasks/9bc313b3-794c-43ea-b532-b31079898970/publish",
+    "path": "/api/tasks/6ede9e35-c457-461e-912a-5a687d7eaea0/publish",
     "request": null,
     "status": 200,
     "response": {
-      "id": "9bc313b3-794c-43ea-b532-b31079898970",
+      "id": "6ede9e35-c457-461e-912a-5a687d7eaea0",
       "title": "Сервис для магазина",
       "industry": "Торговля",
       "topic": "Автоматизация",
@@ -786,7 +787,7 @@
       "contact": "Менеджер демо-магазина, demo@example.org",
       "interaction": "Еженедельная проверка прототипа",
       "status": "published",
-      "confirmedAt": "2026-09-23T10:56:50.616146Z",
+      "confirmedAt": "2026-09-23T11:36:42.712132Z",
       "score": 100,
       "readiness": "priority",
       "breakdown": [
@@ -846,13 +847,13 @@
         }
       ],
       "missing": [],
-      "createdAt": "2026-09-23T10:56:50.599427Z",
-      "updatedAt": "2026-09-23T10:56:50.620708Z"
+      "createdAt": "2026-09-23T11:36:42.692492Z",
+      "updatedAt": "2026-09-23T11:36:42.718045Z"
     }
   },
   {
     "method": "PUT",
-    "path": "/api/tasks/9bc313b3-794c-43ea-b532-b31079898970",
+    "path": "/api/tasks/6ede9e35-c457-461e-912a-5a687d7eaea0",
     "request": {
       "title": "Сервис для магазина",
       "industry": "Торговля",
@@ -866,11 +867,11 @@
   },
   {
     "method": "GET",
-    "path": "/api/tasks/9bc313b3-794c-43ea-b532-b31079898970",
+    "path": "/api/tasks/6ede9e35-c457-461e-912a-5a687d7eaea0",
     "request": null,
     "status": 200,
     "response": {
-      "id": "9bc313b3-794c-43ea-b532-b31079898970",
+      "id": "6ede9e35-c457-461e-912a-5a687d7eaea0",
       "title": "Сервис для магазина",
       "industry": "Торговля",
       "topic": "Автоматизация",
@@ -885,7 +886,7 @@
       "contact": "Менеджер демо-магазина, demo@example.org",
       "interaction": "Еженедельная проверка прототипа",
       "status": "published",
-      "confirmedAt": "2026-09-23T10:56:50.616146Z",
+      "confirmedAt": "2026-09-23T11:36:42.712132Z",
       "score": 100,
       "readiness": "priority",
       "breakdown": [
@@ -945,13 +946,13 @@
         }
       ],
       "missing": [],
-      "createdAt": "2026-09-23T10:56:50.599427Z",
-      "updatedAt": "2026-09-23T10:56:50.620708Z"
+      "createdAt": "2026-09-23T11:36:42.692492Z",
+      "updatedAt": "2026-09-23T11:36:42.718045Z"
     }
   },
   {
     "method": "POST",
-    "path": "/api/tasks/9bc313b3-794c-43ea-b532-b31079898970/proposals",
+    "path": "/api/tasks/6ede9e35-c457-461e-912a-5a687d7eaea0/proposals",
     "request": {
       "teamId": "00000000-0000-0000-0000-0000000007d2",
       "idea": "Панель очереди заявок",
@@ -961,39 +962,39 @@
     },
     "status": 201,
     "response": {
-      "id": "7b98bf89-c63a-4adc-8cc3-67b501adce3c",
-      "taskId": "9bc313b3-794c-43ea-b532-b31079898970",
+      "id": "3c80dbe0-eb0f-4c0f-9579-1c1b9d68620a",
+      "taskId": "6ede9e35-c457-461e-912a-5a687d7eaea0",
       "teamId": "00000000-0000-0000-0000-0000000007d2",
       "idea": "Панель очереди заявок",
       "plan": "Интервью, прототип, проверка на примерах",
       "timeline": "Три недели",
       "prototypeUrl": "https://example.org/prototype",
       "decision": "pending",
-      "createdAt": "2026-09-23T10:56:50.630262Z"
+      "createdAt": "2026-09-23T11:36:42.729601Z"
     }
   },
   {
     "method": "PATCH",
-    "path": "/api/proposals/7b98bf89-c63a-4adc-8cc3-67b501adce3c",
+    "path": "/api/proposals/3c80dbe0-eb0f-4c0f-9579-1c1b9d68620a",
     "request": {
       "decision": "selected"
     },
     "status": 200,
     "response": {
-      "id": "7b98bf89-c63a-4adc-8cc3-67b501adce3c",
-      "taskId": "9bc313b3-794c-43ea-b532-b31079898970",
+      "id": "3c80dbe0-eb0f-4c0f-9579-1c1b9d68620a",
+      "taskId": "6ede9e35-c457-461e-912a-5a687d7eaea0",
       "teamId": "00000000-0000-0000-0000-0000000007d2",
       "idea": "Панель очереди заявок",
       "plan": "Интервью, прототип, проверка на примерах",
       "timeline": "Три недели",
       "prototypeUrl": "https://example.org/prototype",
       "decision": "selected",
-      "createdAt": "2026-09-23T10:56:50.630262Z"
+      "createdAt": "2026-09-23T11:36:42.729601Z"
     }
   },
   {
     "method": "POST",
-    "path": "/api/tasks/9bc313b3-794c-43ea-b532-b31079898970/proposals",
+    "path": "/api/tasks/6ede9e35-c457-461e-912a-5a687d7eaea0/proposals",
     "request": {
       "teamId": "00000000-0000-0000-0000-0000000007d4",
       "idea": "Панель очереди заявок",
@@ -1003,106 +1004,106 @@
     },
     "status": 201,
     "response": {
-      "id": "6ebfc7bf-3273-4d3e-a0fa-dd069c88ba01",
-      "taskId": "9bc313b3-794c-43ea-b532-b31079898970",
+      "id": "3ee11611-30a6-4879-94d7-be7825f7abc9",
+      "taskId": "6ede9e35-c457-461e-912a-5a687d7eaea0",
       "teamId": "00000000-0000-0000-0000-0000000007d4",
       "idea": "Панель очереди заявок",
       "plan": "Интервью, прототип, проверка на примерах",
       "timeline": "Три недели",
       "prototypeUrl": "https://example.org/prototype",
       "decision": "pending",
-      "createdAt": "2026-09-23T10:56:50.640114Z"
+      "createdAt": "2026-09-23T11:36:42.741504Z"
     }
   },
   {
     "method": "PATCH",
-    "path": "/api/proposals/6ebfc7bf-3273-4d3e-a0fa-dd069c88ba01",
+    "path": "/api/proposals/3ee11611-30a6-4879-94d7-be7825f7abc9",
     "request": {
       "decision": "selected"
     },
     "status": 200,
     "response": {
-      "id": "6ebfc7bf-3273-4d3e-a0fa-dd069c88ba01",
-      "taskId": "9bc313b3-794c-43ea-b532-b31079898970",
+      "id": "3ee11611-30a6-4879-94d7-be7825f7abc9",
+      "taskId": "6ede9e35-c457-461e-912a-5a687d7eaea0",
       "teamId": "00000000-0000-0000-0000-0000000007d4",
       "idea": "Панель очереди заявок",
       "plan": "Интервью, прототип, проверка на примерах",
       "timeline": "Три недели",
       "prototypeUrl": "https://example.org/prototype",
       "decision": "selected",
-      "createdAt": "2026-09-23T10:56:50.640114Z"
+      "createdAt": "2026-09-23T11:36:42.741504Z"
     }
   },
   {
     "method": "GET",
-    "path": "/api/tasks/9bc313b3-794c-43ea-b532-b31079898970/proposals",
+    "path": "/api/tasks/6ede9e35-c457-461e-912a-5a687d7eaea0/proposals",
     "request": null,
     "status": 200,
     "response": [
       {
-        "id": "7b98bf89-c63a-4adc-8cc3-67b501adce3c",
-        "taskId": "9bc313b3-794c-43ea-b532-b31079898970",
+        "id": "3c80dbe0-eb0f-4c0f-9579-1c1b9d68620a",
+        "taskId": "6ede9e35-c457-461e-912a-5a687d7eaea0",
         "teamId": "00000000-0000-0000-0000-0000000007d2",
         "idea": "Панель очереди заявок",
         "plan": "Интервью, прототип, проверка на примерах",
         "timeline": "Три недели",
         "prototypeUrl": "https://example.org/prototype",
         "decision": "selected",
-        "createdAt": "2026-09-23T10:56:50.630262Z"
+        "createdAt": "2026-09-23T11:36:42.729601Z"
       },
       {
-        "id": "6ebfc7bf-3273-4d3e-a0fa-dd069c88ba01",
-        "taskId": "9bc313b3-794c-43ea-b532-b31079898970",
+        "id": "3ee11611-30a6-4879-94d7-be7825f7abc9",
+        "taskId": "6ede9e35-c457-461e-912a-5a687d7eaea0",
         "teamId": "00000000-0000-0000-0000-0000000007d4",
         "idea": "Панель очереди заявок",
         "plan": "Интервью, прототип, проверка на примерах",
         "timeline": "Три недели",
         "prototypeUrl": "https://example.org/prototype",
         "decision": "selected",
-        "createdAt": "2026-09-23T10:56:50.640114Z"
+        "createdAt": "2026-09-23T11:36:42.741504Z"
       }
     ]
   },
   {
     "method": "GET",
-    "path": "/api/proposals/7b98bf89-c63a-4adc-8cc3-67b501adce3c/milestones",
+    "path": "/api/proposals/3c80dbe0-eb0f-4c0f-9579-1c1b9d68620a/milestones",
     "request": null,
     "status": 200,
     "response": []
   },
   {
     "method": "POST",
-    "path": "/api/proposals/7b98bf89-c63a-4adc-8cc3-67b501adce3c/milestones",
+    "path": "/api/proposals/3c80dbe0-eb0f-4c0f-9579-1c1b9d68620a/milestones",
     "request": {
       "description": "Прототип проверен с заказчиком"
     },
     "status": 201,
     "response": {
-      "id": "e4520a03-856a-424f-86cf-2e95306fbbca",
-      "proposalId": "7b98bf89-c63a-4adc-8cc3-67b501adce3c",
+      "id": "bd23ccc7-b0fd-4ec9-932a-19154bedf847",
+      "proposalId": "3c80dbe0-eb0f-4c0f-9579-1c1b9d68620a",
       "description": "Прототип проверен с заказчиком",
       "pointsAwarded": 10,
-      "confirmedAt": "2026-09-23T10:56:50.656555Z"
+      "confirmedAt": "2026-09-23T11:36:42.757258Z"
     }
   },
   {
     "method": "GET",
-    "path": "/api/proposals/7b98bf89-c63a-4adc-8cc3-67b501adce3c/milestones",
+    "path": "/api/proposals/3c80dbe0-eb0f-4c0f-9579-1c1b9d68620a/milestones",
     "request": null,
     "status": 200,
     "response": [
       {
-        "id": "e4520a03-856a-424f-86cf-2e95306fbbca",
-        "proposalId": "7b98bf89-c63a-4adc-8cc3-67b501adce3c",
+        "id": "bd23ccc7-b0fd-4ec9-932a-19154bedf847",
+        "proposalId": "3c80dbe0-eb0f-4c0f-9579-1c1b9d68620a",
         "description": "Прототип проверен с заказчиком",
         "pointsAwarded": 10,
-        "confirmedAt": "2026-09-23T10:56:50.656555Z"
+        "confirmedAt": "2026-09-23T11:36:42.757258Z"
       }
     ]
   },
   {
     "method": "POST",
-    "path": "/api/proposals/7b98bf89-c63a-4adc-8cc3-67b501adce3c/milestones",
+    "path": "/api/proposals/3c80dbe0-eb0f-4c0f-9579-1c1b9d68620a/milestones",
     "request": {
       "description": "Повтор"
     },
@@ -1206,16 +1207,16 @@
   },
   {
     "method": "GET",
-    "path": "/api/proposals/6ebfc7bf-3273-4d3e-a0fa-dd069c88ba01/milestones",
+    "path": "/api/proposals/3ee11611-30a6-4879-94d7-be7825f7abc9/milestones",
     "request": null,
     "status": 200,
     "response": [
       {
-        "id": "0ebd5f17-fd7a-4a11-bd4a-140ec3753095",
-        "proposalId": "6ebfc7bf-3273-4d3e-a0fa-dd069c88ba01",
+        "id": "afe225e6-0cce-4c73-a3ef-cd6fef61fa3f",
+        "proposalId": "3ee11611-30a6-4879-94d7-be7825f7abc9",
         "description": "Этап завершён",
         "pointsAwarded": 10,
-        "confirmedAt": "2026-09-23T10:56:50.672989Z"
+        "confirmedAt": "2026-09-23T11:36:42.772182Z"
       }
     ]
   },
@@ -1324,7 +1325,7 @@
     },
     "status": 201,
     "response": {
-      "id": "9d96ea82-bc58-4c24-93ae-835cd3acaeb5",
+      "id": "e049cd36-a99d-4c3d-a45d-37f7bbcd663c",
       "taskId": "00000000-0000-0000-0000-0000000003ec",
       "teamId": "00000000-0000-0000-0000-0000000007d2",
       "idea": "Уточнить процесс",
@@ -1332,18 +1333,18 @@
       "timeline": "Неделя",
       "prototypeUrl": "https://example.org/low-score-demo",
       "decision": "pending",
-      "createdAt": "2026-09-23T10:56:50.688628Z"
+      "createdAt": "2026-09-23T11:36:42.788182Z"
     }
   },
   {
     "method": "PATCH",
-    "path": "/api/proposals/9d96ea82-bc58-4c24-93ae-835cd3acaeb5",
+    "path": "/api/proposals/e049cd36-a99d-4c3d-a45d-37f7bbcd663c",
     "request": {
       "decision": "rejected"
     },
     "status": 200,
     "response": {
-      "id": "9d96ea82-bc58-4c24-93ae-835cd3acaeb5",
+      "id": "e049cd36-a99d-4c3d-a45d-37f7bbcd663c",
       "taskId": "00000000-0000-0000-0000-0000000003ec",
       "teamId": "00000000-0000-0000-0000-0000000007d2",
       "idea": "Уточнить процесс",
@@ -1351,12 +1352,12 @@
       "timeline": "Неделя",
       "prototypeUrl": "https://example.org/low-score-demo",
       "decision": "rejected",
-      "createdAt": "2026-09-23T10:56:50.688628Z"
+      "createdAt": "2026-09-23T11:36:42.788182Z"
     }
   },
   {
     "method": "POST",
-    "path": "/api/proposals/9d96ea82-bc58-4c24-93ae-835cd3acaeb5/milestones",
+    "path": "/api/proposals/e049cd36-a99d-4c3d-a45d-37f7bbcd663c/milestones",
     "request": {
       "description": "Нельзя начислять отклонённой команде"
     },

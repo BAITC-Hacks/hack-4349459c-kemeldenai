@@ -4,7 +4,7 @@ Russian-language React/Vite/TypeScript UI for demo participant entry, the busine
 
 ## Run
 
-Use Node.js 20.19+ or 22.12+. Start the root PostgreSQL Compose service and Agent A's FastAPI server first. The Vite dev server proxies `/api` to `http://127.0.0.1:8000`.
+Use Node.js 20.19+ or 22.12+. Start the root PostgreSQL Compose service and FastAPI server first. The Vite dev server proxies `/api` to `http://127.0.0.1:8000` by default; set `API_PROXY_TARGET` for another local API port.
 
 ```sh
 cd web
@@ -14,12 +14,12 @@ npm run dev
 
 Open the local URL printed by Vite. Run `npm run build` for TypeScript and production-bundle validation. For a separately hosted API, set `VITE_API_BASE_URL` to its origin before building and configure the API to allow that origin; do not put API keys in Vite environment variables.
 
-The frontend calls only endpoints in [the shared contract](../docs/MAIN_TASK.md). Request/response types live in `src/types.ts`, and all HTTP calls live in `src/api.ts`. Until Agent A's API is running, the UI displays a connection error rather than substituting fake catalog data.
+The frontend calls only endpoints in [the shared contract](../docs/MAIN_TASK.md). Request/response types live in `src/types.ts`, and all HTTP calls live in `src/api.ts`. Until the API is running, the UI displays a connection error rather than substituting fake catalog data.
 
 ## Demo path
 
 1. On **Демо-вход**, choose the prefilled business profile. Enter a short description and request clarification questions.
-2. Answer at least three questions, transfer answers to the editable card, and confirm it. Add more detail and confirm again to show the rating increase.
+2. Answer at least three questions; optionally refresh them without losing typed answers. Transfer answers, review any evidence-backed field suggestions, and confirm the editable card. Add more detail and confirm again to show the rating increase.
 3. Publish the task. Choose **Сменить участника** and enter as a seeded student team (Data Nomads is preselected). Find the task and submit an idea, plan, timeline, and HTTP(S) prototype link. The active team is attached automatically.
 4. Return as business, manually select or reject the proposal, and confirm one completed stage for a selected team. The stage awards 10 progress points once; the student team sees its updated total after switching back.
 

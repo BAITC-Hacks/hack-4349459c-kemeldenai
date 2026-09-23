@@ -45,9 +45,16 @@ export interface ClarifyingQuestion {
   question: string
 }
 
+export interface SuggestedField {
+  field: CardField
+  value: string
+  evidence: string
+}
+
 export interface AnalysisResult {
   questions: ClarifyingQuestion[]
-  source: 'ai' | 'fallback'
+  suggestedFields: SuggestedField[]
+  source: 'ai' | 'mixed' | 'fallback'
 }
 
 export interface Team {
