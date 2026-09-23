@@ -1,132 +1,123 @@
-# HackAlem AI task readiness MVP
+# AI Sana — практические задачи для бизнеса и студенческих команд
 
-Runnable five-hour MVP: a business user improves and publishes a task, student teams submit proposals, and the business manually decides which teams to work with.
+## Краткое описание
 
-The [main task and agent handoff](docs/MAIN_TASK.md) records scope, API shapes, scoring, and the demo acceptance test. The API lives in `api/`; the React UI lives in `web/`.
+AI Sana помогает представителю бизнеса превратить первоначальную идею в понятную практическую задачу, а студенческой команде — найти её и предложить решение. Бизнес видит, какой информации не хватает в карточке, дополняет её и сам решает, с какими командами работать. Это локально запускаемый демонстрационный проект HackAlem.
 
-The [completed demo round](docs/NEXT_TASK.md) records participant entry and confirmed progress points. The [AI task assistant record](docs/AI_REQUIREMENTS.md) documents the next completed task-focused round and its remaining limits. Each computer should branch from the latest `origin/main` for its chosen task.
+## Что реализовано
 
-## Development database
+- **Два демо-сценария:** вход от имени представителя бизнеса или одной из подготовленных студенческих команд, с возможностью переключаться между ними.
+- **Конструктор задачи:** описание своими словами, 3–5 уточняющих вопросов, редактируемая карточка, сохранение черновика, подтверждение и публикация. Если ключ OpenAI не задан или запрос не удался, вопросы формируются локально.
+- **Подсказки по карточке:** помощник предлагает фрагменты из исходного описания с указанием текста-источника. Пользователь может изменить, принять или отклонить предложение; оно не записывается в карточку автоматически.
+- **Рейтинг готовности 0–100:** сервер начисляет баллы за наличие содержательной информации о контексте, потребности, данных, результате, критериях успеха, ограничениях, пользователях и взаимодействии с бизнесом. Показаны разбивка и незаполненные пункты. Рейтинг обновляется после подтверждения карточки и не запрещает публикацию задачи с низким баллом.
+- **Каталог и отклики команд:** опубликованные задачи доступны всем демо-командам; есть поиск, фильтры, сохранённые задачи и объяснимые рекомендации по профилю команды и её действиям. Команда отправляет идею, план, срок и HTTP(S)-ссылку на прототип. Черновик отклика сохраняется в этом браузере.
+- **Решение бизнеса и прогресс:** бизнес вручную выбирает, отклоняет или оставляет отклики без решения; можно выбрать несколько команд. Подтверждение одного завершённого этапа выбранной команды начисляет ей 10 баллов прогресса один раз. Команда видит свои отклики, их статусы и ранг, вычисленный в интерфейсе из накопленных баллов.
 
-Docker Compose starts PostgreSQL. Run the API and Vite on the host using the commands below. Each computer runs its own local database; the Git repository carries code and seed definitions, not database state.
+## Как работает решение
 
-```sh
-cp .env.example .env
-docker compose up -d db
-docker compose ps
+1. Представитель бизнеса вводит описание задачи. API запрашивает уточняющие вопросы у OpenAI при наличии ключа или использует локальный алгоритм. Сведения, явно содержащиеся в описании, могут появиться как предложения с проверяемым фрагментом-источником.
+2. Человек отвечает на вопросы и редактирует карточку. Черновик можно сохранить заранее; после подтверждения сервер фиксирует текущую версию и рассчитывает рейтинг по фиксированным правилам. Модель не выставляет баллы и не публикует задачу.
+3. После публикации карточка появляется в открытом каталоге. Команда изучает условия и отправляет отклик. Рекомендации помогают упорядочить задачи, но не закрывают доступ к остальному каталогу.
+4. Бизнес просматривает отклики и принимает решение сам. Если выбранная команда завершила этап, бизнес подтверждает результат, а баллы прогресса сохраняются в PostgreSQL. Интерфейс пересчитывает видимый ранг команды по этим баллам.
+
+## Технологии
+
+| Часть | Используется |
+| --- | --- |
+| Интерфейс | TypeScript, React 19, Vite 8, CSS |
+| API | Python 3.11+, FastAPI, Pydantic, SQLAlchemy |
+| База данных | PostgreSQL 17 через Docker Compose, драйвер `psycopg` |
+| AI | OpenAI Chat Completions API; модель по умолчанию — `gpt-4o-mini`. При отсутствии ключа работает локальный сценарий уточнений |
+| Проверки | Pytest, Ruff; сборка TypeScript/Vite и тесты логики интерфейса на Node.js |
+
+Рекомендации задач и рейтинг готовности рассчитываются правилами проекта, без обученной модели рекомендаций.
+
+## Архитектура
+
+```text
+Браузер: React + Vite
+  ├─ интерфейс бизнеса и команды
+  ├─ localStorage: выбранный демо-участник и черновики откликов
+  └─ запросы /api
+        ↓
+FastAPI
+  ├─ карточки, отклики, решения и подтверждённый прогресс
+  ├─ расчёт рейтинга и рекомендаций
+  ├─ помощник задач → OpenAI API (необязательно; есть локальный fallback)
+  └─ SQLAlchemy → PostgreSQL
 ```
 
-The API runs on the host during development and connects through `DATABASE_URL` from `.env`.
-If you change `POSTGRES_PASSWORD`, update the password in `DATABASE_URL` too.
+Код интерфейса находится в [`web/`](web/), API и логика — в [`api/app/`](api/app/), запуск базы — в [`compose.yaml`](compose.yaml). Контракт API доступен в [`api/openapi.json`](api/openapi.json); дополнительные решения и результаты проверок — в [`docs/`](docs/).
 
-Do not commit `.env`, API keys, or local database files. Stop the database with `docker compose down`; use `docker compose down -v` only when intentionally deleting local development data.
+## Установка и запуск
 
-## Parallel branches
+Команды ниже рассчитаны на macOS/Linux. Нужны Docker с Compose, Python 3.11+ и Node.js 20.19+ или 22.12+ с npm.
 
-- Initial Computer A branch: `codex/agent-a-api`
-- Initial Computer B branch: `codex/agent-b-ui`
+1. Получите репозиторий и создайте локальную конфигурацию:
 
-The initial API and UI branches are integrated on `main`. For future parallel work, divide ownership by complete user-facing tasks rather than by frontend and backend layers. Each task includes its necessary UI, API, data, tests, and documentation. Both computers should pull the latest `origin/main`, work on separate branches, and integrate against the contract in [docs/MAIN_TASK.md](docs/MAIN_TASK.md) before merging.
+   ```sh
+   git clone https://github.com/BAITC-Hacks/hack-4349459c-kemeldenai.git
+   cd hack-4349459c-kemeldenai
+   cp .env.example .env
+   ```
 
-## Backend
+   В `.env` замените учебный `POSTGRES_PASSWORD` и укажите такой же пароль в `DATABASE_URL`. Не добавляйте `.env` и API-ключи в Git. `OPENAI_API_KEY` можно оставить пустым: демонстрация продолжит работать с локальными вопросами. При необходимости измените `OPENAI_MODEL`.
 
-Python 3.11+ runs FastAPI, Pydantic validation and SQLAlchemy persistence against PostgreSQL 17. JSON uses camelCase. `/docs` is the interactive API explorer; `/openapi.json` is the machine-readable contract. All application errors use `{ "error": "..." }`. The service is a local demo without authentication: the business/student switch is a UI mode, not an authorization boundary.
+2. Запустите PostgreSQL:
 
-From the repository root:
+   ```sh
+   docker compose up -d db
+   docker compose ps
+   ```
 
-```sh
-python3 -m venv api/.venv
-api/.venv/bin/python -m pip install -r api/requirements.txt
-# Copy the example only if .env does not already exist, then edit local values.
-cp -n .env.example .env
-docker compose up -d db
-api/.venv/bin/python -m api.app.seed
-api/.venv/bin/python -m uvicorn api.app.main:app --host 127.0.0.1 --port 8000 --reload
-```
+   Дождитесь состояния `healthy` у контейнера базы. Если порт `5432` занят, поменяйте `POSTGRES_PORT` в `.env` и порт в `DATABASE_URL` на одно и то же свободное значение.
 
-If port 5432 is occupied, set `POSTGRES_PORT=55432` and change the port in `DATABASE_URL` to `55432` in `.env`, then rerun Compose. No backend credentials are sent to the frontend. Vite development origins `http://localhost:5173` and `http://127.0.0.1:5173` are allowed by CORS.
+3. Установите зависимости API, создайте демонстрационные записи и запустите сервер из корня репозитория:
 
-Idempotent schema setup creates missing tables; this initial MVP does not migrate existing column definitions. Seeds contain five incomplete drafts, five confirmed published cards of different readiness, five teams and five proposals. Stable seed IDs prevent duplicates, and the live scoring function calculates seed scores. Re-running seeds must preserve user edits and decisions. SQLite is used only for isolated fast tests; the development application uses PostgreSQL.
+   ```sh
+   python3 -m venv api/.venv
+   api/.venv/bin/python -m pip install -r api/requirements.txt
+   api/.venv/bin/python -m api.app.seed
+   api/.venv/bin/python -m uvicorn api.app.main:app --host 127.0.0.1 --port 8000
+   ```
 
-### Confirmation and scoring
+   API будет доступен на `http://127.0.0.1:8000`, интерактивная схема — на `http://127.0.0.1:8000/docs`. Перезапустите API после изменения `.env`.
 
-Draft fields may be omitted or blank. New and saved unconfirmed drafts have `confirmedAt: null`, `score: null`, readiness `draft`, and no earned points. `PUT` saves only unpublished drafts and clears earlier confirmation. `POST .../confirm` submits the complete editable snapshot and atomically saves its fields, confirmation timestamp and deterministic score. Keep local edits in the browser until that call succeeds. Published cards reject `PUT`; reconfirm them to update their visible fields and rating. `POST .../publish` requires confirmation, including for cards scoring zero.
+4. В другом терминале запустите интерфейс:
 
-Scoring checks meaningful, non-placeholder values in these seven categories:
+   ```sh
+   cd web
+   npm ci
+   npm run dev
+   ```
 
-| Category | Maximum |
-| --- | ---: |
-| Context and need | 20 |
-| Data/materials | 20 |
-| Expected result | 15 |
-| Success criteria | 15 |
-| Constraints | 10 |
-| Users | 10 |
-| Business contact and interaction | 10 |
+   Откройте адрес, напечатанный Vite (обычно `http://127.0.0.1:5173/`). В режиме разработки запросы `/api` направляются на локальный сервер FastAPI.
 
-Context/need split into 10 points each; contact/interaction split into 5 each. Each subpart earns its full weight or zero. Empty strings, whitespace and obvious placeholders earn zero, including `Тест`, `test`, known keyboard filler and repeated single-letter filler. Short facts such as `CSV`, `1С` and `20%` remain eligible. This transparent completeness score is not a claim that the business facts are correct. Existing confirmed scores recalculate on the next confirmation. `breakdown` exposes earned/max values and `missing` names the fields to improve. The four bands are `draft` (0–39), `workable` (40–69), `ready` (70–89), and `priority` (90–100); these are independent of publication status.
+Для проверки кода из корня репозитория можно выполнить `api/.venv/bin/python -m pytest api/tests`, `api/.venv/bin/ruff check api`, а из `web/` — `npm run build`. Тесты логики интерфейса запускаются командой `npm test` на версии Node.js с поддержкой встроенной обработки TypeScript; в проекте они проверялись на Node.js 25.6.
 
-The catalog includes **every** published card, sorted by score descending. Optional `topic` and `readiness` filters narrow it only when requested. Low scores never block proposals. A team may submit more than once, and the business may select multiple proposals, reject them, or leave them pending. No model chooses a team. After a selected team completes a stage, the business can confirm it once and award 10 persistent progress points through `POST /api/proposals/{id}/milestones`; repeats return 409.
+## Как проверить решение
 
-### AI task assistant
+1. На экране **«Демо-вход»** выберите **«Войти как бизнес»**. Введите, например: «Менеджеры вручную обрабатывают 100 заявок в день; нужен общий список заказов».
+2. Нажмите **«Получить вопросы»**. Убедитесь, что показаны 3–5 вопросов. Без `OPENAI_API_KEY` интерфейс прямо обозначит локальный вариант. Ответьте на вопросы и при желании обновите их: введённые ответы должны сохраниться.
+3. Перенесите ответы в карточку. Проверьте предложенные фрагменты исходного описания: до нажатия **«Добавить в карточку»** соответствующее поле остаётся пустым. Укажите название задачи, подтвердите карточку и посмотрите рейтинг и разбивку.
+4. Заполните ещё несколько недостающих полей, например данные и измеримый критерий успеха, затем подтвердите изменения. Рейтинг подтверждённой версии должен измениться. Опубликуйте задачу.
+5. Нажмите **«Сменить участника»**, войдите как демо-команда **Data Nomads** и найдите опубликованную задачу в каталоге. Отправьте отклик с идеей, планом, сроком и HTTP(S)-ссылкой на прототип. Для проверки только формы можно использовать тестовый адрес `https://example.com/prototype`; это не действующий прототип.
+6. Вернитесь в бизнес-сценарий, откройте **«Отклики команд»** и вручную выберите полученный отклик. Подтвердите описанный завершённый этап. После переключения обратно на команду в **«Мои отклики»** будут видны решение и 10 начисленных баллов прогресса. Повторное подтверждение того же этапа баллы не удваивает.
 
-Set `OPENAI_API_KEY` and optionally `OPENAI_MODEL` in the server's `.env`. The default model is `gpt-4o-mini`. The adapter makes one non-streaming request with a 7-second timeout to OpenAI's [chat completions API](https://developers.openai.com/api/reference/cli/resources/chat), using [JSON mode](https://developers.openai.com/api/docs/guides/structured-outputs). There are no retries or automatic card writes. Without a key, or on network/API/JSON failure, deterministic questions use the same schema and `source: "fallback"`. The key stays on the server; restart the API after changing `.env`.
+## Данные и интеграции
 
-The full system prompt lives in [`api/app/ai.py`](api/app/ai.py). It treats the description and card as untrusted data, asks three to five Russian questions about gaps not already explicit in the text, and forbids invented facts and team selection. Question fields must come from the supplied missing/refinement list; complete cards receive refinement questions. The response also has `suggestedFields`: optional verbatim excerpts for empty card fields, each with matching `value` and `evidence`. Unsupported model suggestions are discarded. Narrow, exact excerpts from clear process, user, and expected-result phrases remain available locally when the provider fails. Suggestions appear for human accept, edit, or discard; neither they nor answers change the confirmed score until the business confirms the card. The structured contact field is omitted, and common email and phone patterns are redacted from bounded provider input. Pattern-based redaction is not comprehensive anonymization.
+- При первом запуске создаются синтетические данные: пять опубликованных задач с разной готовностью, пять черновиков, пять команд и пять откликов. Повторный запуск заполнения не должен дублировать записи или перезаписывать изменения пользователя.
+- Карточки, команды, отклики, решения, подтверждённый прогресс, сохранённые задачи и сигналы рекомендаций хранятся в локальном PostgreSQL. Выбранный демо-участник и черновики откликов сохраняются в браузере; черновики не синхронизируются между устройствами.
+- Единственный внешний AI-сервис во время работы — OpenAI API, если серверу передан ключ. Ключ остаётся на сервере. При недоступности API используются локальные вопросы и ограниченный набор предложений из текста пользователя. Реальные бизнес-датасеты для запуска не требуются.
 
-Refreshing questions preserves typed answers by their target fields. Transferring an identical answer block again does not append it after line-by-line whitespace normalization; semantic paraphrases are not deduplicated. Suggestions never overwrite a nonempty card field automatically.
+## Ограничения
 
-Example request:
+- **Демо-вход не является авторизацией.** Нет регистрации, паролей, разграничения прав на сервере и личных аккаунтов команд; выбранные демо-профили общие.
+- Рейтинг задачи показывает полноту заполнения карточки, а не истинность фактов, качество идеи или вероятность успеха. Ранг команды отражает записанные баллы за подтверждённые этапы, а не независимую оценку её квалификации. Рекомендации основаны на совпадении слов, профиле команды и её действиях; они не понимают все синонимы и не являются обученной моделью.
+- Предложения помощника ограничены проверяемыми фрагментами текста. Удаление типичных email-адресов и телефонов перед вызовом OpenAI не является полной анонимизацией. Человек должен проверить AI-ответы перед подтверждением.
+- Черновики откликов хранятся только в текущем браузере. Нет синхронизации между устройствами, уведомлений о новых решениях и полноценного трекера выполнения проекта.
+- Docker Compose запускает только базу данных; API и интерфейс стартуют отдельно. Текущая инициализация создаёт недостающие таблицы, но не выполняет миграции существующих столбцов для промышленного обновления схемы.
 
-```json
-{"description":"Нужен сервис для магазина","industry":"Торговля"}
-```
+## Развёрнутая версия
 
-Fallback response:
-
-```json
-{
-  "questions": [
-    {"field":"need","question":"Какую конкретную проблему бизнеса нужно решить и почему это важно?"},
-    {"field":"users","question":"Кто будет пользоваться решением и какие действия им нужны?"},
-    {"field":"dataMaterials","question":"Какие данные, примеры и материалы доступны команде?"}
-  ],
-  "suggestedFields":[],
-  "source":"fallback"
-}
-```
-
-For invalid output such as `{"questions":null}`, the questions fall back. With partially valid output, unknown fields, blank questions and duplicates are discarded and deterministic questions fill the response to at least three. `source: "ai"` means at least three validated model questions survived; `mixed` means partial model output was supplemented, and `fallback` means the questions were local. Logs report only failure class names, never the key, response body or full user input. Unit tests mock the provider, including malformed responses, and require no key or paid requests.
-
-### Backend verification and handoff
-
-```sh
-api/.venv/bin/python -m pytest api/tests --cov=api.app --cov-config=api/pyproject.toml --cov-report=term-missing --cov-fail-under=80
-api/.venv/bin/ruff check api
-api/.venv/bin/python -m api.verify_postgres
-```
-
-See [`api/IMPLEMENTATION.md`](api/IMPLEMENTATION.md) for the initial implementation plan and [`api/HANDOFF.md`](api/HANDOFF.md) for endpoint examples, PostgreSQL verification and current limitations. [`api/openapi.json`](api/openapi.json) and [`api/examples.json`](api/examples.json) are generated from the running implementation for any task owner changing the API or UI.
-
-The PostgreSQL check creates a uniquely named temporary schema, verifies the full API flow and persistence across application restarts, regenerates the two contract files, and removes only its own schema. It leaves application records untouched. When a provider key is configured, this command makes one live clarification call; unit tests always disable live calls.
-
-## Frontend
-
-With PostgreSQL and the API running, start the UI in a second terminal:
-
-```sh
-cd web
-npm ci
-npm run dev
-```
-
-Open the local URL printed by Vite. The development server proxies `/api` to `http://127.0.0.1:8000`. See [web/README.md](web/README.md) for frontend build and handoff details.
-
-### Five-minute demo
-
-1. **0:00–0:45:** In business mode, enter «Нужен сервис для магазина» and show three clarification questions.
-2. **0:45–2:00:** Save a weak draft, confirm it, then add context, available data and measurable acceptance criteria. Confirm again and show the increase and category breakdown.
-3. **2:00–2:30:** Publish; switch to student mode and find the card in the score-sorted catalog. Show that a low-rated seed card is also visible.
-4. **2:30–3:30:** Choose a demo team and submit an idea, plan, timeline and required HTTP(S) prototype URL.
-5. **3:30–4:30:** Return to business mode, select the proposal, then show another proposal can be selected or rejected manually.
-6. **4:30–5:00:** Show the published card's missing-information hints and the deterministic fallback indicator when no AI key is configured.
+В текущем репозитории нет подтверждённой ссылки на публично развёрнутую версию. Для проверки используйте локальный запуск выше.
