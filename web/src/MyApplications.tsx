@@ -1,3 +1,4 @@
+import { RankBadge } from './TeamRank'
 import { useEffect, useState } from 'react'
 import { api } from './api'
 import type { ApplicationsSnapshot, ProposalDecision } from './types'
@@ -46,7 +47,7 @@ export function MyApplications({ teamId, onOpenTask, onRefreshTeam }: {
     {error && <p className="error-message" role="alert">{error} {snapshot && 'Показаны ранее загруженные данные.'}<button type="button" className="button button--text" onClick={refresh} disabled={loading}>Повторить</button></p>}
     {loading && !snapshot && <p role="status">Загружаем ваши отклики…</p>}
     {snapshot && <>
-      <div className="application-stats"><span>Отправлено <strong>{applications.length}</strong></span><span>На рассмотрении <strong>{applications.filter((item) => item.proposal.decision === 'pending').length}</strong></span><span>Выбрано <strong>{applications.filter((item) => item.proposal.decision === 'selected').length}</strong></span><span>Баллы команды <strong>{snapshot.team.progressPoints}</strong></span></div>
+      <div className="application-stats"><span>Отправлено <strong>{applications.length}</strong></span><span>На рассмотрении <strong>{applications.filter((item) => item.proposal.decision === 'pending').length}</strong></span><span>Выбрано <strong>{applications.filter((item) => item.proposal.decision === 'selected').length}</strong></span><span>Ранг команды <RankBadge points={snapshot.team.progressPoints} /><strong>{snapshot.team.progressPoints} баллов</strong></span></div>
       <label className="field application-filter"><span className="field__label">Статус отклика</span><select value={filter} onChange={(event) => setFilter(event.target.value as ProposalDecision | '')}><option value="">Все статусы</option>{Object.entries(labels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
       {!applications.length && <p className="state-message">Вы ещё не отправляли предложения. Найдите задачу в каталоге и предложите решение — статус появится здесь.</p>}
       {applications.length > 0 && !visible.length && <p className="state-message">Откликов с этим статусом пока нет.</p>}

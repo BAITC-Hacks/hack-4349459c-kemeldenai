@@ -1,3 +1,4 @@
+import { RankBadge } from './TeamRank'
 import { useEffect, useState } from 'react'
 import type { Team } from './types'
 
@@ -63,7 +64,7 @@ export function DemoEntry({ teams, teamsLoading, teamsError, onRetryTeams, onBus
                 {teams.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
               </select>
             </label>
-            {team && <div className="persona-card__team"><span>Навыки команды</span><strong>{team.skills.join(' · ')}</strong><small>{team.progressPoints} баллов прогресса</small></div>}
+            {team && <div className="persona-card__team"><span>Навыки команды</span><strong>{team.skills.join(' · ')}</strong><RankBadge points={team.progressPoints} /><small>{team.progressPoints} баллов прогресса</small></div>}
             {teamsError && <div className="entry-error"><p role="alert">{teamsError}</p><button type="button" onClick={onRetryTeams}>Повторить загрузку</button></div>}
             <button className="button button--accent" type="button" disabled={!team} onClick={() => onStudent(teamId)}>Войти как команда <span aria-hidden="true">→</span></button>
           </section>
